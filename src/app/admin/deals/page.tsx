@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -225,10 +224,16 @@ export default function DealsPage() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-6 gap-3">
-        {[...Array(6)].map((_, i) => (
-          <Skeleton key={i} className="h-[500px] rounded-xl" />
-        ))}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-[500px] rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -241,12 +246,12 @@ export default function DealsPage() {
         </p>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-red-700 hover:bg-red-800" onClick={openNew}>
+            <Button className="bg-red-700 hover:bg-red-800" onClick={openNew} size="sm">
               <Plus className="w-4 h-4 mr-1" />
               Новая сделка
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingDeal ? "Редактировать сделку" : "Новая сделка"}
@@ -272,9 +277,7 @@ export default function DealsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -290,9 +293,7 @@ export default function DealsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {properties.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.title}
-                      </SelectItem>
+                      <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -318,9 +319,7 @@ export default function DealsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {STAGES.map((s) => (
-                        <SelectItem key={s.key} value={s.key}>
-                          {s.label}
-                        </SelectItem>
+                        <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -337,9 +336,7 @@ export default function DealsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
-                Отмена
-              </Button>
+              <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Отмена</Button>
               <Button className="bg-red-700 hover:bg-red-800" onClick={handleSave}>
                 {editingDeal ? "Сохранить" : "Создать"}
               </Button>
@@ -348,123 +345,123 @@ export default function DealsPage() {
         </Dialog>
       </div>
 
-      {/* Kanban Board */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {STAGES.map((stage) => {
-          const stageDeals = deals.filter((d) => d.stage === stage.key);
-          return (
-            <div key={stage.key} className="flex flex-col">
-              {/* Column header */}
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <div className={`w-2 h-2 rounded-full ${STAGE_HEADER_COLORS[stage.key]}`} />
-                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  {stage.label}
-                </span>
-                <Badge variant="secondary" className="ml-auto text-xs h-5 px-1.5">
-                  {stageDeals.length}
-                </Badge>
-              </div>
+      {/* Kanban Board - horizontally scrollable on mobile */}
+      <div className="overflow-x-auto pb-4 -mx-2 px-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 min-w-[640px]">
+          {STAGES.map((stage) => {
+            const stageDeals = deals.filter((d) => d.stage === stage.key);
+            return (
+              <div key={stage.key} className="flex flex-col">
+                {/* Column header */}
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <div className={`w-2 h-2 rounded-full ${STAGE_HEADER_COLORS[stage.key]}`} />
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    {stage.label}
+                  </span>
+                  <Badge variant="secondary" className="ml-auto text-xs h-5 px-1.5">
+                    {stageDeals.length}
+                  </Badge>
+                </div>
 
-              {/* Column body */}
-              <div className="bg-gray-100/70 rounded-xl p-2 flex-1 min-h-[200px] space-y-2">
-                {stageDeals.length === 0 ? (
-                  <div className="flex items-center justify-center h-20 text-xs text-gray-400">
-                    Пусто
-                  </div>
-                ) : (
-                  stageDeals.map((deal) => (
-                    <Card
-                      key={deal.id}
-                      className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => openEdit(deal)}
-                    >
-                      <CardContent className="p-3 space-y-2">
-                        <div className="flex items-start justify-between gap-1">
-                          <h4 className="text-sm font-medium leading-tight line-clamp-2">
-                            {deal.title}
-                          </h4>
-                          <div className="flex gap-0.5 flex-shrink-0">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); openEdit(deal); }}
-                              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <button
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Удалить сделку?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Сделка &quot;{deal.title}&quot; будет удалена навсегда.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Отмена</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(deal.id)}
-                                    className="bg-red-700 hover:bg-red-800"
+                {/* Column body */}
+                <div className="bg-gray-100/70 rounded-xl p-2 flex-1 min-h-[200px] space-y-2">
+                  {stageDeals.length === 0 ? (
+                    <div className="flex items-center justify-center h-20 text-xs text-gray-400">
+                      Пусто
+                    </div>
+                  ) : (
+                    stageDeals.map((deal) => (
+                      <Card
+                        key={deal.id}
+                        className="shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => openEdit(deal)}
+                      >
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-1">
+                            <h4 className="text-sm font-medium leading-tight line-clamp-2">
+                              {deal.title}
+                            </h4>
+                            <div className="flex gap-0.5 flex-shrink-0">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openEdit(deal); }}
+                                className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-1.5 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 min-w-[28px] min-h-[28px] flex items-center justify-center"
                                   >
-                                    Удалить
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Удалить сделку?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Сделка &quot;{deal.title}&quot; будет удалена навсегда.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(deal.id)}
+                                      className="bg-red-700 hover:bg-red-800"
+                                    >
+                                      Удалить
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
-                        </div>
 
-                        {deal.client && (
-                          <p className="text-xs text-gray-500 flex items-center gap-1">
-                            <Handshake className="w-3 h-3" />
-                            {deal.client.name}
+                          {deal.client && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                              <Handshake className="w-3 h-3" />
+                              {deal.client.name}
+                            </p>
+                          )}
+
+                          {deal.value != null && deal.value > 0 && (
+                            <p className="text-xs font-semibold text-red-700 flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              {formatMoney(deal.value)}
+                            </p>
+                          )}
+
+                          <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDate(deal.createdAt)}
                           </p>
-                        )}
 
-                        {deal.value != null && deal.value > 0 && (
-                          <p className="text-xs font-semibold text-red-700 flex items-center gap-1">
-                            <DollarSign className="w-3 h-3" />
-                            {formatMoney(deal.value)}
-                          </p>
-                        )}
-
-                        <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatDate(deal.createdAt)}
-                        </p>
-
-                        {/* Quick stage move */}
-                        <div className="pt-1 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                          <Select
-                            value={deal.stage}
-                            onValueChange={(v) => handleStageChange(deal.id, v)}
-                          >
-                            <SelectTrigger className="h-6 text-[10px] border-0 bg-transparent p-0 focus:ring-0 w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STAGES.map((s) => (
-                                <SelectItem key={s.key} value={s.key}>
-                                  {s.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
+                          {/* Quick stage move */}
+                          <div className="pt-1 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={deal.stage}
+                              onValueChange={(v) => handleStageChange(deal.id, v)}
+                            >
+                              <SelectTrigger className="h-7 text-xs border-0 bg-transparent p-0 focus:ring-0 w-full min-h-[28px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STAGES.map((s) => (
+                                  <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

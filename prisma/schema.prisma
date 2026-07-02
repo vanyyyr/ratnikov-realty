@@ -18,21 +18,26 @@ model Lead {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   notes       String?
+  tags        String?  // JSON array of tag strings, e.g. '["VIP","Покупатель"]'
   client      Client?
 }
 
 model Client {
-  id          String   @id @default(cuid())
-  name        String
-  phone       String
-  email       String?
-  telegram    String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deals       Deal[]
-  leadId      String?  @unique
-  lead        Lead?    @relation(fields: [leadId], references: [id])
+  id              String   @id @default(cuid())
+  name            String
+  phone           String
+  email           String?
+  telegram        String?
+  notes           String?
+  tags            String?  // JSON array
+  telegramHandle  String?  // @username without @
+  maxId           String?  // Max user ID
+  source          String?  // where client came from
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deals           Deal[]
+  leadId          String?  @unique
+  lead            Lead?    @relation(fields: [leadId], references: [id])
 }
 
 model Deal {
@@ -91,4 +96,13 @@ model ActivityLog {
   action      String
   details     String?
   createdAt   DateTime @default(now())
+}
+
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  content   String
+  category  String   @default("general") // greeting, showing, followup, congrats, general
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

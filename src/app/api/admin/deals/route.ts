@@ -40,6 +40,12 @@ export async function PUT(req: NextRequest) {
   const { id, ...data } = await req.json();
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
+  // Fetch current deal to detect stage changes
+  const currentDeal = await db.deal.findUnique({ where: { id } });
+  if (!currentDeal) {
+    return NextResponse.json({ error: "Deal not found" }, { status: 404 });
+  }
+
   const update: Record<string, unknown> = {};
   if (data.title) update.title = data.title;
   if (data.clientId) update.clientId = data.clientId;
@@ -49,12 +55,18 @@ export async function PUT(req: NextRequest) {
     if (data.stage === "closed_won" || data.stage === "closed_lost") {
       update.closedAt = new Date();
     }
+    // Log stage change
+    if (currentDeal.stage !== data.stage) {
+      await logActivity(
+        "deal_stage_changed",
+        `Сделка '${currentDeal.title}' переведена в стадию '${data.stage}' (было: '${currentDeal.stage}')`
+      );
+    }
   }
   if (data.notes !== undefined) update.notes = data.notes;
   if (data.propertyId !== undefined) update.propertyId = data.propertyId;
 
   const deal = await db.deal.update({ where: { id }, data: update });
-  await logActivity("deal_updated", `Сделка ${deal.title}: стадия ${deal.stage}`);
   return NextResponse.json(deal);
 }
 

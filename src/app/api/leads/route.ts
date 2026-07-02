@@ -19,6 +19,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
     }
 
+    // Check for duplicate lead with same phone
+    const existingLead = await db.lead.findFirst({
+      where: { phone: parsed.data.phone },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const isDuplicate = !!existingLead;
+
     const lead = await db.lead.create({
       data: {
         name: parsed.data.name,
@@ -27,20 +35,45 @@ export async function POST(req: NextRequest) {
         comment: parsed.data.comment || null,
         status: "new",
         source: "website",
+        notes: isDuplicate
+          ? `Возможный дубликат лида: ${existingLead!.id} (${existingLead!.name}, ${existingLead!.createdAt.toISOString()})`
+          : null,
       },
     });
 
+    if (isDuplicate) {
+      await logActivity(
+        "new_lead_duplicate",
+        `Новый лид (возможный дубликат): ${parsed.data.name}, ${parsed.data.phone}. Дублирует: ${existingLead!.id}`
+      );
+    } else {
+      await logActivity("new_lead", `Новая заявка: ${parsed.data.name}, ${parsed.data.phone}`);
+    }
+
     await sendNotification({
       type: "new_lead",
-      title: "Новая заявка с сайта",
+      title: isDuplicate ? "Новая заявка (возможный дубликат)" : "Новая заявка с сайта",
       message: `*Имя:* ${parsed.data.name}\n*Телефон:* ${parsed.data.phone}${
         parsed.data.serviceType ? `\n*Услуга:* ${parsed.data.serviceType}` : ""
-      }${parsed.data.comment ? `\n*Комментарий:* ${parsed.data.comment}` : ""}`,
+      }${parsed.data.comment ? `\n*Комментарий:* ${parsed.data.comment}` : ""}${
+        isDuplicate ? `\n\n⚠️ Дубликат лида: ${existingLead!.name} (${existingLead!.createdAt.toLocaleDateString("ru-RU")})` : ""
+      }`,
     });
 
-    await logActivity("new_lead", `Новая заявка: ${parsed.data.name}, ${parsed.data.phone}`);
-
-    return NextResponse.json({ success: true, id: lead.id });
+    return NextResponse.json({
+      success: true,
+      id: lead.id,
+      duplicate: isDuplicate,
+      ...(isDuplicate && {
+        existingLead: {
+          id: existingLead!.id,
+          name: existingLead!.name,
+          phone: existingLead!.phone,
+          status: existingLead!.status,
+          createdAt: existingLead!.createdAt,
+        },
+      }),
+    });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

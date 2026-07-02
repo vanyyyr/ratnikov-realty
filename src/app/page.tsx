@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
 import { useI18n } from "@/lib/i18n-context";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,25 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Menu,
   BarChart3,
   ShieldCheck,
@@ -39,6 +58,7 @@ import {
   Quote,
   Star,
   Globe,
+  PhoneCall,
 } from "lucide-react";
 
 /* ──────────────────────────── helpers ──────────────────────────── */
@@ -123,6 +143,9 @@ export default function Home() {
   const stats = t("stats");
   const reviews = t("reviews");
   const contact = t("contact");
+  const faq = t("faq");
+  const exitIntent = t("exitIntent");
+  const floating = t("floating");
   const footer = t("footer");
 
   /* state */
@@ -136,9 +159,35 @@ export default function Home() {
   });
   const [loading, setLoading] = useState(false);
 
+  // Callback dialog state
+  const [callbackOpen, setCallbackOpen] = useState(false);
+  const [callbackForm, setCallbackForm] = useState({ name: "", phone: "" });
+  const [callbackLoading, setCallbackLoading] = useState(false);
+
+  // Exit intent state
+  const [exitIntentOpen, setExitIntentOpen] = useState(false);
+  const [exitIntentForm, setExitIntentForm] = useState({ name: "", phone: "" });
+  const [exitIntentLoading, setExitIntentLoading] = useState(false);
+
+  // Floating buttons visibility (hide on scroll down, show on scroll up)
+  const [floatingVisible, setFloatingVisible] = useState(true);
+
   /* scroll listener */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          setScrolled(currentScrollY > 60);
+          setFloatingVisible(currentScrollY < lastScrollY || currentScrollY < 100);
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -168,7 +217,12 @@ export default function Home() {
         }),
       });
       if (res.ok) {
-        toast.success(contact.success);
+        const json = await res.json();
+        if (json.duplicate) {
+          toast.warning(contact.duplicateWarning);
+        } else {
+          toast.success(contact.success);
+        }
         setFormData({ name: "", phone: "", serviceType: "", comment: "" });
       } else {
         toast.error(contact.error);
@@ -182,6 +236,94 @@ export default function Home() {
 
   /* advantage icons */
   const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
+
+  /* callback form handler */
+  const handleCallbackSubmit = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    if (!callbackForm.name.trim() || !callbackForm.phone.trim()) {
+      toast.error(contact.required);
+      return;
+    }
+    setCallbackLoading(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: callbackForm.name,
+          phone: callbackForm.phone,
+          serviceType: locale === "ru" ? "Обратный звонок" : "Callback",
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.duplicate) {
+          toast.warning(contact.duplicateWarning);
+        } else {
+          toast.success(contact.callbackSuccess);
+        }
+        setCallbackForm({ name: "", phone: "" });
+        setCallbackOpen(false);
+        sessionStorage.setItem("formSubmitted", "true");
+      } else {
+        toast.error(contact.error);
+      }
+    } catch {
+      toast.error(contact.error);
+    } finally {
+      setCallbackLoading(false);
+    }
+  }, [callbackForm, locale, contact]);
+
+  /* exit intent form handler */
+  const handleExitIntentSubmit = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    if (!exitIntentForm.name.trim() || !exitIntentForm.phone.trim()) {
+      toast.error(contact.required);
+      return;
+    }
+    setExitIntentLoading(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: exitIntentForm.name,
+          phone: exitIntentForm.phone,
+          serviceType: "Exit Intent",
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.duplicate) {
+          toast.warning(contact.duplicateWarning);
+        } else {
+          toast.success(exitIntent.success);
+        }
+        setExitIntentForm({ name: "", phone: "" });
+        setExitIntentOpen(false);
+        sessionStorage.setItem("formSubmitted", "true");
+      } else {
+        toast.error(contact.error);
+      }
+    } catch {
+      toast.error(contact.error);
+    } finally {
+      setExitIntentLoading(false);
+    }
+  }, [exitIntentForm, exitIntent, contact]);
+
+  /* exit intent listener */
+  useEffect(() => {
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY < 5 && !sessionStorage.getItem("exitIntentShown") && !sessionStorage.getItem("formSubmitted")) {
+        setExitIntentOpen(true);
+        sessionStorage.setItem("exitIntentShown", "true");
+      }
+    };
+    document.documentElement.addEventListener("mouseleave", handleMouseLeave);
+    return () => document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
+  }, []);
 
   /* nav links */
   const navLinks = [
@@ -394,6 +536,7 @@ export default function Home() {
                       height={507}
                       className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
                       priority
+                      fetchPriority="high"
                     />
                   </div>
                   {/* Decorative corner */}
@@ -426,6 +569,7 @@ export default function Home() {
                       width={600}
                       height={800}
                       className="w-full h-auto object-cover"
+                      loading="lazy"
                     />
                   </div>
                   {/* Decorative shapes */}
@@ -592,6 +736,35 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ═══════════════════ FAQ ═══════════════════ */}
+        <section id="faq" className="py-20 sm:py-28 bg-gray-50">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <FadeIn className="text-center mb-14 sm:mb-16">
+              <SectionLabel>{faq.label}</SectionLabel>
+              <SectionHeading>{faq.title}</SectionHeading>
+            </FadeIn>
+
+            <FadeIn delay={0.1}>
+              <Accordion type="single" collapsible className="w-full">
+                {faq.items.map((item, i) => (
+                  <AccordionItem
+                    key={i}
+                    value={`faq-${i}`}
+                    className="border-gray-200/80 bg-white rounded-xl px-6 mb-3 shadow-sm data-[state=open]:shadow-md transition-shadow"
+                  >
+                    <AccordionTrigger className="text-left text-[15px] font-semibold text-foreground hover:text-red-700 hover:no-underline py-5">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-5">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </FadeIn>
+          </div>
+        </section>
+
         {/* ═══════════════════ CONTACT ═══════════════════ */}
         <section id="contact" className="py-20 sm:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -631,6 +804,13 @@ export default function Home() {
                         <MessageCircle size={19} className="text-red-700" />
                         Макс
                       </a>
+                    </Button>
+                    <Button
+                      onClick={() => setCallbackOpen(true)}
+                      className="h-12 justify-start gap-3 text-[14px] font-medium bg-red-700 hover:bg-red-800 text-white rounded-lg"
+                    >
+                      <PhoneCall size={19} />
+                      {contact.callbackButton}
                     </Button>
                   </div>
                 </FadeIn>
@@ -853,6 +1033,163 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ═══════════════════ FLOATING BUTTONS ═══════════════════ */}
+      <TooltipProvider delayDuration={300}>
+        <div
+          className={`fixed bottom-6 right-6 z-40 flex flex-col gap-3 transition-all duration-300 ${
+            floatingVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+          }`}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href="https://t.me/ilyaratnikov"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#229ED9] hover:bg-[#1a8bc4] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+                aria-label={floating.telegram}
+              >
+                <Send size={22} className="sm:w-5 sm:h-5" />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="text-xs font-medium">
+              {floating.telegram}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href="https://max.ru"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#1a1a1a] hover:bg-[#333] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+                aria-label={floating.max}
+              >
+                <MessageCircle size={22} className="sm:w-5 sm:h-5" />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="text-xs font-medium">
+              {floating.max}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+
+      {/* ═══════════════════ CALLBACK DIALOG ═══════════════════ */}
+      <Dialog open={callbackOpen} onOpenChange={setCallbackOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">{contact.callbackTitle}</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              {contact.callbackDescription}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCallbackSubmit} className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label htmlFor="cb-name" className="text-xs font-medium">{contact.name} *</Label>
+              <Input
+                id="cb-name"
+                value={callbackForm.name}
+                onChange={(e) => setCallbackForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder={contact.name}
+                required
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cb-phone" className="text-xs font-medium">{contact.phone} *</Label>
+              <Input
+                id="cb-phone"
+                type="tel"
+                value={callbackForm.phone}
+                onChange={(e) => setCallbackForm((p) => ({ ...p, phone: e.target.value }))}
+                placeholder={contact.phone}
+                required
+                className="h-11"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={callbackLoading}
+              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+            >
+              {callbackLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  {contact.callbackSubmit}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <PhoneCall size={16} />
+                  {contact.callbackSubmit}
+                </span>
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════ EXIT INTENT DIALOG ═══════════════════ */}
+      <Dialog open={exitIntentOpen} onOpenChange={setExitIntentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-red-700">{exitIntent.title}</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
+              {exitIntent.description}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleExitIntentSubmit} className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label htmlFor="ei-name" className="text-xs font-medium">{exitIntent.name} *</Label>
+              <Input
+                id="ei-name"
+                value={exitIntentForm.name}
+                onChange={(e) => setExitIntentForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder={exitIntent.name}
+                required
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ei-phone" className="text-xs font-medium">{exitIntent.phone} *</Label>
+              <Input
+                id="ei-phone"
+                type="tel"
+                value={exitIntentForm.phone}
+                onChange={(e) => setExitIntentForm((p) => ({ ...p, phone: e.target.value }))}
+                placeholder={exitIntent.phone}
+                required
+                className="h-11"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={exitIntentLoading}
+              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+            >
+              {exitIntentLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  {exitIntent.submit}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Send size={16} />
+                  {exitIntent.submit}
+                </span>
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

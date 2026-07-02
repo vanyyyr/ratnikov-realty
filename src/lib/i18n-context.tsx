@@ -12,7 +12,7 @@ import { type Locale, translations, type TranslationKey } from "./i18n";
 interface I18nContextType {
   locale: Locale;
   setLocale: (l: Locale) => void;
-  t: (section: TranslationKey) => (typeof translations)["ru"][typeof section];
+  t: <K extends TranslationKey>(section: K) => (typeof translations)["ru"][K];
 }
 
 const I18nContext = createContext<I18nContextType | null>(null);
@@ -21,7 +21,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>("ru");
 
   const t = useCallback(
-    (section: TranslationKey) => translations[locale][section],
+    <K extends TranslationKey>(section: K): (typeof translations)["ru"][K] =>
+      translations[locale][section] as (typeof translations)["ru"][K],
     [locale]
   );
 

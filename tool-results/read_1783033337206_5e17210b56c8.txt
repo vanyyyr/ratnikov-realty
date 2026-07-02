@@ -1,0 +1,858 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
+     4→     4→import Image from "next/image";
+     5→     5→import { useI18n } from "@/lib/i18n-context";
+     6→     6→import { Button } from "@/components/ui/button";
+     7→     7→import { Input } from "@/components/ui/input";
+     8→     8→import { Textarea } from "@/components/ui/textarea";
+     9→     9→import { Label } from "@/components/ui/label";
+    10→    10→import { Card, CardContent } from "@/components/ui/card";
+    11→    11→import {
+    12→    12→  Select,
+    13→    13→  SelectContent,
+    14→    14→  SelectItem,
+    15→    15→  SelectTrigger,
+    16→    16→  SelectValue,
+    17→    17→} from "@/components/ui/select";
+    18→    18→import { toast } from "sonner";
+    19→    19→import { Badge } from "@/components/ui/badge";
+    20→    20→import {
+    21→    21→  Sheet,
+    22→    22→  SheetContent,
+    23→    23→  SheetTrigger,
+    24→    24→  SheetTitle,
+    25→    25→} from "@/components/ui/sheet";
+    26→    26→import {
+    27→    27→  Menu,
+    28→    28→  BarChart3,
+    29→    29→  ShieldCheck,
+    30→    30→  Megaphone,
+    31→    31→  Handshake,
+    32→    32→  MessageCircle,
+    33→    33→  ChevronDown,
+    34→    34→  Phone,
+    35→    35→  MapPin,
+    36→    36→  Send,
+    37→    37→  ArrowRight,
+    38→    38→  ExternalLink,
+    39→    39→  Quote,
+    40→    40→  Star,
+    41→    41→  Globe,
+    42→    42→} from "lucide-react";
+    43→    43→
+    44→    44→/* ──────────────────────────── helpers ──────────────────────────── */
+    45→    45→
+    46→    46→function FadeIn({
+    47→    47→  children,
+    48→    48→  className = "",
+    49→    49→  delay = 0,
+    50→    50→}: {
+    51→    51→  children: ReactNode;
+    52→    52→  className?: string;
+    53→    53→  delay?: number;
+    54→    54→}) {
+    55→    55→  const ref = useRef<HTMLDivElement>(null);
+    56→    56→  const [visible, setVisible] = useState(false);
+    57→    57→
+    58→    58→  useEffect(() => {
+    59→    59→    const el = ref.current;
+    60→    60→    if (!el) return;
+    61→    61→    const obs = new IntersectionObserver(
+    62→    62→      ([e]) => {
+    63→    63→        if (e.isIntersecting) {
+    64→    64→          setVisible(true);
+    65→    65→          obs.disconnect();
+    66→    66→        }
+    67→    67→      },
+    68→    68→      { threshold: 0.08 },
+    69→    69→    );
+    70→    70→    obs.observe(el);
+    71→    71→    return () => obs.disconnect();
+    72→    72→  }, []);
+    73→    73→
+    74→    74→  return (
+    75→    75→    <div
+    76→    76→      ref={ref}
+    77→    77→      className={className}
+    78→    78→      style={{
+    79→    79→        opacity: visible ? 1 : 0,
+    80→    80→        transform: visible ? "translateY(0)" : "translateY(24px)",
+    81→    81→        transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
+    82→    82→      }}
+    83→    83→    >
+    84→    84→      {children}
+    85→    85→    </div>
+    86→    86→  );
+    87→    87→}
+    88→    88→
+    89→    89→function SectionLabel({ children }: { children: ReactNode }) {
+    90→    90→  return (
+    91→    91→    <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+    92→    92→      {children}
+    93→    93→    </span>
+    94→    94→  );
+    95→    95→}
+    96→    96→
+    97→    97→function SectionHeading({
+    98→    98→  children,
+    99→    99→  className = "",
+   100→   100→}: {
+   101→   101→  children: ReactNode;
+   102→   102→  className?: string;
+   103→   103→}) {
+   104→   104→  return (
+   105→   105→    <h2
+   106→   106→      className={`text-3xl sm:text-4xl font-bold text-foreground tracking-tight ${className}`}
+   107→   107→    >
+   108→   108→      {children}
+   109→   109→    </h2>
+   110→   110→  );
+   111→   111→}
+   112→   112→
+   113→   113→/* ──────────────────────────── page ──────────────────────────── */
+   114→   114→
+   115→   115→export default function Home() {
+   116→   116→  const { locale, setLocale, t } = useI18n();
+   117→   117→
+   118→   118→  const nav = t("nav");
+   119→   119→  const hero = t("hero");
+   120→   120→  const about = t("about");
+   121→   121→  const advantages = t("advantages");
+   122→   122→  const services = t("services");
+   123→   123→  const stats = t("stats");
+   124→   124→  const reviews = t("reviews");
+   125→   125→  const contact = t("contact");
+   126→   126→  const footer = t("footer");
+   127→   127→
+   128→   128→  /* state */
+   129→   129→  const [scrolled, setScrolled] = useState(false);
+   130→   130→  const [mobileOpen, setMobileOpen] = useState(false);
+   131→   131→  const [formData, setFormData] = useState({
+   132→   132→    name: "",
+   133→   133→    phone: "",
+   134→   134→    serviceType: "",
+   135→   135→    comment: "",
+   136→   136→  });
+   137→   137→  const [loading, setLoading] = useState(false);
+   138→   138→
+   139→   139→  /* scroll listener */
+   140→   140→  useEffect(() => {
+   141→   141→    const onScroll = () => setScrolled(window.scrollY > 60);
+   142→   142→    window.addEventListener("scroll", onScroll, { passive: true });
+   143→   143→    return () => window.removeEventListener("scroll", onScroll);
+   144→   144→  }, []);
+   145→   145→
+   146→   146→  const scrollTo = (id: string) => {
+   147→   147→    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+   148→   148→    setMobileOpen(false);
+   149→   149→  };
+   150→   150→
+   151→   151→  /* form */
+   152→   152→  const handleSubmit = async (e: FormEvent) => {
+   153→   153→    e.preventDefault();
+   154→   154→    if (!formData.name.trim() || !formData.phone.trim()) {
+   155→   155→      toast.error(contact.required);
+   156→   156→      return;
+   157→   157→    }
+   158→   158→    setLoading(true);
+   159→   159→    try {
+   160→   160→      const res = await fetch("/api/leads", {
+   161→   161→        method: "POST",
+   162→   162→        headers: { "Content-Type": "application/json" },
+   163→   163→        body: JSON.stringify({
+   164→   164→          name: formData.name,
+   165→   165→          phone: formData.phone,
+   166→   166→          serviceType: formData.serviceType || undefined,
+   167→   167→          comment: formData.comment || undefined,
+   168→   168→        }),
+   169→   169→      });
+   170→   170→      if (res.ok) {
+   171→   171→        toast.success(contact.success);
+   172→   172→        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
+   173→   173→      } else {
+   174→   174→        toast.error(contact.error);
+   175→   175→      }
+   176→   176→    } catch {
+   177→   177→      toast.error(contact.error);
+   178→   178→    } finally {
+   179→   179→      setLoading(false);
+   180→   180→    }
+   181→   181→  };
+   182→   182→
+   183→   183→  /* advantage icons */
+   184→   184→  const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
+   185→   185→
+   186→   186→  /* nav links */
+   187→   187→  const navLinks = [
+   188→   188→    { label: nav.about, id: "about" },
+   189→   189→    { label: nav.services, id: "services" },
+   190→   190→    { label: nav.reviews, id: "reviews" },
+   191→   191→    { label: nav.contact, id: "contact" },
+   192→   192→  ];
+   193→   193→
+   194→   194→  return (
+   195→   195→    <div className="min-h-screen flex flex-col bg-white">
+   196→   196→      {/* ═══════════════════ NAVBAR ═══════════════════ */}
+   197→   197→      <header
+   198→   198→        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+   199→   199→          scrolled
+   200→   200→            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+   201→   201→            : "bg-transparent"
+   202→   202→        }`}
+   203→   203→      >
+   204→   204→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+   205→   205→          {/* Logo */}
+   206→   206→          <button
+   207→   207→            onClick={() => scrollTo("hero")}
+   208→   208→            className="flex items-center select-none"
+   209→   209→          >
+   210→   210→            <span
+   211→   211→              className={`text-[14px] font-semibold tracking-tight transition-colors ${
+   212→   212→                scrolled ? "text-foreground" : "text-white"
+   213→   213→              }`}
+   214→   214→            >
+   215→   215→              {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   216→   216→            </span>
+   217→   217→          </button>
+   218→   218→
+   219→   219→          {/* Desktop nav links */}
+   220→   220→          <nav className="hidden lg:flex items-center gap-8">
+   221→   221→            {navLinks.map((l) => (
+   222→   222→              <button
+   223→   223→                key={l.id}
+   224→   224→                onClick={() => scrollTo(l.id)}
+   225→   225→                className={`text-[13px] font-medium transition-colors ${
+   226→   226→                  scrolled
+   227→   227→                    ? "text-foreground/70 hover:text-red-700"
+   228→   228→                    : "text-white/70 hover:text-white"
+   229→   229→                }`}
+   230→   230→              >
+   231→   231→                {l.label}
+   232→   232→              </button>
+   233→   233→            ))}
+   234→   234→          </nav>
+   235→   235→
+   236→   236→          {/* Desktop right side */}
+   237→   237→          <div className="hidden lg:flex items-center gap-3">
+   238→   238→            {/* Lang toggle */}
+   239→   239→            <div className="flex items-center bg-black/5 rounded-md p-[3px]">
+   240→   240→              {(["ru", "en"] as const).map((lng) => (
+   241→   241→                <button
+   242→   242→                  key={lng}
+   243→   243→                  onClick={() => setLocale(lng)}
+   244→   244→                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-[5px] transition-all duration-200 ${
+   245→   245→                    locale === lng
+   246→   246→                      ? "bg-red-700 text-white shadow-sm"
+   247→   247→                      : scrolled
+   248→   248→                        ? "text-foreground/50 hover:text-foreground"
+   249→   249→                        : "text-white/50 hover:text-white"
+   250→   250→                  }`}
+   251→   251→                >
+   252→   252→                  {lng}
+   253→   253→                </button>
+   254→   254→              ))}
+   255→   255→            </div>
+   256→   256→
+   257→   257→            <Button
+   258→   258→              onClick={() => scrollTo("contact")}
+   259→   259→              className="bg-red-700 hover:bg-red-800 text-white h-9 px-5 text-[13px] font-medium rounded-md"
+   260→   260→              size="default"
+   261→   261→            >
+   262→   262→              {hero.cta}
+   263→   263→            </Button>
+   264→   264→          </div>
+   265→   265→
+   266→   266→          {/* Mobile hamburger */}
+   267→   267→          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+   268→   268→            <SheetTrigger asChild>
+   269→   269→              <button
+   270→   270→                className={`lg:hidden transition-colors ${
+   271→   271→                  scrolled ? "text-foreground" : "text-white"
+   272→   272→                }`}
+   273→   273→                aria-label="Menu"
+   274→   274→              >
+   275→   275→                <Menu size={24} />
+   276→   276→              </button>
+   277→   277→            </SheetTrigger>
+   278→   278→            <SheetContent side="right" className="w-[300px] pt-10">
+   279→   279→              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
+   280→   280→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   281→   281→              </SheetTitle>
+   282→   282→
+   283→   283→              <nav className="flex flex-col gap-1">
+   284→   284→                {navLinks.map((l) => (
+   285→   285→                  <button
+   286→   286→                    key={l.id}
+   287→   287→                    onClick={() => scrollTo(l.id)}
+   288→   288→                    className="text-left text-[15px] font-medium text-foreground/80 hover:text-red-700 transition-colors py-3 border-b border-border/50"
+   289→   289→                  >
+   290→   290→                    {l.label}
+   291→   291→                  </button>
+   292→   292→                ))}
+   293→   293→              </nav>
+   294→   294→
+   295→   295→              <div className="flex items-center bg-gray-100 rounded-md p-[3px] w-fit mt-8">
+   296→   296→                {(["ru", "en"] as const).map((lng) => (
+   297→   297→                  <button
+   298→   298→                    key={lng}
+   299→   299→                    onClick={() => setLocale(lng)}
+   300→   300→                    className={`px-3 py-1.5 text-[12px] font-bold uppercase rounded-[5px] transition-all ${
+   301→   301→                      locale === lng
+   302→   302→                        ? "bg-red-700 text-white"
+   303→   303→                        : "text-foreground/50"
+   304→   304→                    }`}
+   305→   305→                  >
+   306→   306→                    {lng}
+   307→   307→                  </button>
+   308→   308→                ))}
+   309→   309→              </div>
+   310→   310→
+   311→   311→              <Button
+   312→   312→                onClick={() => scrollTo("contact")}
+   313→   313→                className="bg-red-700 hover:bg-red-800 text-white w-full h-11 mt-6 text-[14px] font-medium"
+   314→   314→              >
+   315→   315→                {hero.cta}
+   316→   316→              </Button>
+   317→   317→            </SheetContent>
+   318→   318→          </Sheet>
+   319→   319→        </div>
+   320→   320→      </header>
+   321→   321→
+   322→   322→      <main className="flex-1">
+   323→   323→        {/* ═══════════════════ HERO ═══════════════════ */}
+   324→   324→        <section
+   325→   325→          id="hero"
+   326→   326→          className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
+   327→   327→        >
+   328→   328→          {/* background layers */}
+   329→   329→          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" />
+   330→   330→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" />
+   331→   331→
+   332→   332→          {/* thin red accent line at top */}
+   333→   333→          <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
+   334→   334→
+   335→   335→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
+   336→   336→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   337→   337→              {/* Text content */}
+   338→   338→              <div className="text-center lg:text-left order-2 lg:order-1">
+   339→   339→                <FadeIn>
+   340→   340→                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
+   341→   341→                    {hero.greeting}
+   342→   342→                  </p>
+   343→   343→                </FadeIn>
+   344→   344→
+   345→   345→                <FadeIn delay={0.1}>
+   346→   346→                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+   347→   347→                    {hero.name}
+   348→   348→                  </h1>
+   349→   349→                </FadeIn>
+   350→   350→
+   351→   351→                <FadeIn delay={0.2}>
+   352→   352→                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+   353→   353→                    {hero.title}
+   354→   354→                  </p>
+   355→   355→                </FadeIn>
+   356→   356→
+   357→   357→                <FadeIn delay={0.3}>
+   358→   358→                  <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+   359→   359→                    {hero.subtitle}
+   360→   360→                  </p>
+   361→   361→                </FadeIn>
+   362→   362→
+   363→   363→                <FadeIn delay={0.4}>
+   364→   364→                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+   365→   365→                    <Button
+   366→   366→                      onClick={() => scrollTo("contact")}
+   367→   367→                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow"
+   368→   368→                    >
+   369→   369→                      {hero.cta}
+   370→   370→                      <ArrowRight size={17} />
+   371→   371→                    </Button>
+   372→   372→                    <a
+   373→   373→                      href="https://cian.ru/cat.php?deal_type=sale&engine_version=extended"
+   374→   374→                      target="_blank"
+   375→   375→                      rel="noopener noreferrer"
+   376→   376→                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
+   377→   377→                    >
+   378→   378→                      {hero.cian}
+   379→   379→                      <ExternalLink size={15} />
+   380→   380→                    </a>
+   381→   381→                  </div>
+   382→   382→                </FadeIn>
+   383→   383→              </div>
+   384→   384→
+   385→   385→              {/* Photo */}
+   386→   386→              <FadeIn delay={0.3} className="order-1 lg:order-2 flex justify-center lg:justify-end">
+   387→   387→                <div className="relative">
+   388→   388→                  <div className="absolute -left-2 top-6 bottom-6 w-[3px] bg-gradient-to-b from-red-700 via-red-600 to-red-800 rounded-full hidden sm:block" />
+   389→   389→                  <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10">
+   390→   390→                    <Image
+   391→   391→                      src="/hero-photo.jpg"
+   392→   392→                      alt={hero.name}
+   393→   393→                      width={380}
+   394→   394→                      height={507}
+   395→   395→                      className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
+   396→   396→                      priority
+   397→   397→                    />
+   398→   398→                  </div>
+   399→   399→                  {/* Decorative corner */}
+   400→   400→                  <div className="absolute -bottom-3 -right-3 w-20 h-20 border-2 border-red-700/20 rounded-2xl -z-10 hidden sm:block" />
+   401→   401→                </div>
+   402→   402→              </FadeIn>
+   403→   403→            </div>
+   404→   404→          </div>
+   405→   405→
+   406→   406→          {/* Scroll indicator */}
+   407→   407→          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+   408→   408→            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
+   409→   409→              {hero.scroll}
+   410→   410→            </span>
+   411→   411→            <ChevronDown className="text-white/50 animate-bounce" size={18} />
+   412→   412→          </div>
+   413→   413→        </section>
+   414→   414→
+   415→   415→        {/* ═══════════════════ ABOUT ═══════════════════ */}
+   416→   416→        <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
+   417→   417→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   418→   418→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   419→   419→              {/* Photo */}
+   420→   420→              <FadeIn>
+   421→   421→                <div className="relative max-w-md mx-auto lg:mx-0">
+   422→   422→                  <div className="relative rounded-2xl overflow-hidden shadow-xl">
+   423→   423→                    <Image
+   424→   424→                      src="/hero-photo.jpg"
+   425→   425→                      alt={hero.name}
+   426→   426→                      width={600}
+   427→   427→                      height={800}
+   428→   428→                      className="w-full h-auto object-cover"
+   429→   429→                    />
+   430→   430→                  </div>
+   431→   431→                  {/* Decorative shapes */}
+   432→   432→                  <div className="absolute -bottom-4 -right-4 w-28 h-28 bg-red-700/5 rounded-2xl -z-10" />
+   433→   433→                  <div className="absolute -top-4 -left-4 w-16 h-16 border-2 border-red-700/15 rounded-xl -z-10" />
+   434→   434→                </div>
+   435→   435→              </FadeIn>
+   436→   436→
+   437→   437→              {/* Text */}
+   438→   438→              <div>
+   439→   439→                <FadeIn>
+   440→   440→                  <SectionLabel>{about.label}</SectionLabel>
+   441→   441→                  <SectionHeading className="mb-6">{about.title}</SectionHeading>
+   442→   442→                </FadeIn>
+   443→   443→
+   444→   444→                <FadeIn delay={0.1}>
+   445→   445→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+   446→   446→                    {about.description}
+   447→   447→                  </p>
+   448→   448→                </FadeIn>
+   449→   449→
+   450→   450→                {/* Mission box */}
+   451→   451→                <FadeIn delay={0.2}>
+   452→   452→                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
+   453→   453→                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
+   454→   454→                      {about.mission}
+   455→   455→                    </h3>
+   456→   456→                    <p className="text-muted-foreground text-sm leading-relaxed">
+   457→   457→                      {about.missionText}
+   458→   458→                    </p>
+   459→   459→                  </div>
+   460→   460→                </FadeIn>
+   461→   461→
+   462→   462→                <FadeIn delay={0.3}>
+   463→   463→                  <Badge className="bg-red-700 text-white hover:bg-red-800 text-xs px-4 py-1.5 rounded-md font-medium">
+   464→   464→                    {about.partner}
+   465→   465→                  </Badge>
+   466→   466→                </FadeIn>
+   467→   467→              </div>
+   468→   468→            </div>
+   469→   469→          </div>
+   470→   470→        </section>
+   471→   471→
+   472→   472→        {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
+   473→   473→        <section className="py-20 sm:py-28 bg-gray-50">
+   474→   474→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   475→   475→            <FadeIn className="text-center mb-14 sm:mb-16">
+   476→   476→              <SectionLabel>{advantages.label}</SectionLabel>
+   477→   477→              <SectionHeading>{advantages.title}</SectionHeading>
+   478→   478→            </FadeIn>
+   479→   479→
+   480→   480→            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+   481→   481→              {advantages.items.map((item, i) => {
+   482→   482→                const Icon = advIcons[i];
+   483→   483→                return (
+   484→   484→                  <FadeIn key={i} delay={i * 0.1}>
+   485→   485→                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   486→   486→                      <CardContent className="p-6 sm:p-8">
+   487→   487→                        <div className="flex items-start gap-4">
+   488→   488→                          <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
+   489→   489→                            <Icon
+   490→   490→                              size={21}
+   491→   491→                              className="text-red-700 group-hover:text-white transition-colors duration-300"
+   492→   492→                            />
+   493→   493→                          </div>
+   494→   494→                          <div className="min-w-0">
+   495→   495→                            <h3 className="text-[15px] sm:text-base font-semibold text-foreground mb-2 leading-snug">
+   496→   496→                              {item.title}
+   497→   497→                            </h3>
+   498→   498→                            <p className="text-muted-foreground text-sm leading-relaxed">
+   499→   499→                              {item.text}
+   500→   500→                            </p>
+   501→   501→                          </div>
+   502→   502→                        </div>
+   503→   503→                      </CardContent>
+   504→   504→                    </Card>
+   505→   505→                  </FadeIn>
+   506→   506→                );
+   507→   507→              })}
+   508→   508→            </div>
+   509→   509→          </div>
+   510→   510→        </section>
+   511→   511→
+   512→   512→        {/* ═══════════════════ SERVICES ═══════════════════ */}
+   513→   513→        <section id="services" className="py-20 sm:py-28 bg-white">
+   514→   514→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   515→   515→            <FadeIn className="text-center mb-14 sm:mb-16">
+   516→   516→              <SectionLabel>{services.label}</SectionLabel>
+   517→   517→              <SectionHeading className="mb-4">{services.title}</SectionHeading>
+   518→   518→              <p className="text-muted-foreground text-[15px] sm:text-base max-w-2xl mx-auto leading-relaxed">
+   519→   519→                {services.subtitle}
+   520→   520→              </p>
+   521→   521→            </FadeIn>
+   522→   522→
+   523→   523→            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+   524→   524→              {services.items.map((item, i) => (
+   525→   525→                <FadeIn key={i} delay={i * 0.1}>
+   526→   526→                  <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   527→   527→                    <CardContent className="p-6 sm:p-8 flex flex-col h-full">
+   528→   528→                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
+   529→   529→                        {String(i + 1).padStart(2, "0")}
+   530→   530→                      </span>
+   531→   531→                      <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
+   532→   532→                        {item.title}
+   533→   533→                      </h3>
+   534→   534→                      <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+   535→   535→                        {item.text}
+   536→   536→                      </p>
+   537→   537→                    </CardContent>
+   538→   538→                  </Card>
+   539→   539→                </FadeIn>
+   540→   540→              ))}
+   541→   541→            </div>
+   542→   542→          </div>
+   543→   543→        </section>
+   544→   544→
+   545→   545→        {/* ═══════════════════ STATS ═══════════════════ */}
+   546→   546→        <section className="py-20 sm:py-24 bg-[#0A0A0A] relative overflow-hidden">
+   547→   547→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(185,28,28,0.06),transparent)]" />
+   548→   548→
+   549→   549→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   550→   550→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+   551→   551→              {stats.items.map((item, i) => (
+   552→   552→                <FadeIn key={i} delay={i * 0.1} className="text-center">
+   553→   553→                  <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
+   554→   554→                    {item.value}
+   555→   555→                  </div>
+   556→   556→                  <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+   557→   557→                    {item.label}
+   558→   558→                  </div>
+   559→   559→                </FadeIn>
+   560→   560→              ))}
+   561→   561→            </div>
+   562→   562→          </div>
+   563→   563→        </section>
+   564→   564→
+   565→   565→        {/* ═══════════════════ REVIEWS ═══════════════════ */}
+   566→   566→        <section id="reviews" className="py-20 sm:py-28 bg-white">
+   567→   567→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   568→   568→            <FadeIn className="text-center mb-14 sm:mb-16">
+   569→   569→              <SectionLabel>{reviews.label}</SectionLabel>
+   570→   570→              <SectionHeading>{reviews.title}</SectionHeading>
+   571→   571→            </FadeIn>
+   572→   572→
+   573→   573→            <FadeIn>
+   574→   574→              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+   575→   575→                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+   576→   576→                  <Quote size={28} className="text-red-700/40" />
+   577→   577→                </div>
+   578→   578→                <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+   579→   579→                  {reviews.placeholder}
+   580→   580→                </p>
+   581→   581→                <div className="flex items-center justify-center gap-1.5">
+   582→   582→                  {[...Array(5)].map((_, i) => (
+   583→   583→                    <Star
+   584→   584→                      key={i}
+   585→   585→                      size={18}
+   586→   586→                      className="text-gray-200 fill-gray-200"
+   587→   587→                    />
+   588→   588→                  ))}
+   589→   589→                </div>
+   590→   590→              </div>
+   591→   591→            </FadeIn>
+   592→   592→          </div>
+   593→   593→        </section>
+   594→   594→
+   595→   595→        {/* ═══════════════════ CONTACT ═══════════════════ */}
+   596→   596→        <section id="contact" className="py-20 sm:py-28 bg-white">
+   597→   597→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   598→   598→            <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
+   599→   599→              {/* Left: info */}
+   600→   600→              <div className="lg:col-span-2">
+   601→   601→                <FadeIn>
+   602→   602→                  <SectionLabel>{contact.label}</SectionLabel>
+   603→   603→                  <SectionHeading className="mb-4">{contact.title}</SectionHeading>
+   604→   604→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-10">
+   605→   605→                    {contact.subtitle}
+   606→   606→                  </p>
+   607→   607→                </FadeIn>
+   608→   608→
+   609→   609→                <FadeIn delay={0.15}>
+   610→   610→                  <div className="flex flex-col gap-3">
+   611→   611→                    <Button
+   612→   612→                      asChild
+   613→   613→                      variant="outline"
+   614→   614→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   615→   615→                    >
+   616→   616→                      <a
+   617→   617→                        href="https://t.me/ilyaratnikov"
+   618→   618→                        target="_blank"
+   619→   619→                        rel="noopener noreferrer"
+   620→   620→                      >
+   621→   621→                        <MessageCircle size={19} className="text-red-700" />
+   622→   622→                        Telegram
+   623→   623→                      </a>
+   624→   624→                    </Button>
+   625→   625→                    <Button
+   626→   626→                      asChild
+   627→   627→                      variant="outline"
+   628→   628→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   629→   629→                    >
+   630→   630→                      <a href="https://max.ru" target="_blank" rel="noopener noreferrer">
+   631→   631→                        <MessageCircle size={19} className="text-red-700" />
+   632→   632→                        Макс
+   633→   633→                      </a>
+   634→   634→                    </Button>
+   635→   635→                  </div>
+   636→   636→                </FadeIn>
+   637→   637→
+   638→   638→                {/* Contact info below messenger buttons */}
+   639→   639→                <FadeIn delay={0.25}>
+   640→   640→                  <div className="mt-10 space-y-4">
+   641→   641→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   642→   642→                      <Phone size={16} className="text-red-700/70 flex-shrink-0" />
+   643→   643→                      <a href="tel:+79892467798" className="hover:text-red-700 transition-colors">+7 (989) 246-77-98</a>
+   644→   644→                    </div>
+   645→   645→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   646→   646→                      <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
+   647→   647→                      <span>{footer.address}</span>
+   648→   648→                    </div>
+   649→   649→                  </div>
+   650→   650→                </FadeIn>
+   651→   651→              </div>
+   652→   652→
+   653→   653→              {/* Right: form */}
+   654→   654→              <FadeIn delay={0.1} className="lg:col-span-3">
+   655→   655→                <form
+   656→   656→                  onSubmit={handleSubmit}
+   657→   657→                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
+   658→   658→                >
+   659→   659→                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
+   660→   660→                    <div className="space-y-2">
+   661→   661→                      <Label htmlFor="name" className="text-xs font-medium">
+   662→   662→                        {contact.name} *
+   663→   663→                      </Label>
+   664→   664→                      <Input
+   665→   665→                        id="name"
+   666→   666→                        value={formData.name}
+   667→   667→                        onChange={(e) =>
+   668→   668→                          setFormData((p) => ({ ...p, name: e.target.value }))
+   669→   669→                        }
+   670→   670→                        placeholder={contact.name}
+   671→   671→                        required
+   672→   672→                        className="h-11"
+   673→   673→                      />
+   674→   674→                    </div>
+   675→   675→                    <div className="space-y-2">
+   676→   676→                      <Label htmlFor="phone" className="text-xs font-medium">
+   677→   677→                        {contact.phone} *
+   678→   678→                      </Label>
+   679→   679→                      <Input
+   680→   680→                        id="phone"
+   681→   681→                        type="tel"
+   682→   682→                        value={formData.phone}
+   683→   683→                        onChange={(e) =>
+   684→   684→                          setFormData((p) => ({ ...p, phone: e.target.value }))
+   685→   685→                        }
+   686→   686→                        placeholder={contact.phone}
+   687→   687→                        required
+   688→   688→                        className="h-11"
+   689→   689→                      />
+   690→   690→                    </div>
+   691→   691→                  </div>
+   692→   692→
+   693→   693→                  <div className="space-y-2 mb-5">
+   694→   694→                    <Label className="text-xs font-medium">
+   695→   695→                      {contact.serviceType}
+   696→   696→                    </Label>
+   697→   697→                    <Select
+   698→   698→                      value={formData.serviceType}
+   699→   699→                      onValueChange={(v) =>
+   700→   700→                        setFormData((p) => ({ ...p, serviceType: v }))
+   701→   701→                      }
+   702→   702→                    >
+   703→   703→                      <SelectTrigger className="w-full h-11">
+   704→   704→                        <SelectValue placeholder={contact.serviceType} />
+   705→   705→                      </SelectTrigger>
+   706→   706→                      <SelectContent>
+   707→   707→                        {contact.serviceTypes.map((type) => (
+   708→   708→                          <SelectItem key={type} value={type}>
+   709→   709→                            {type}
+   710→   710→                          </SelectItem>
+   711→   711→                        ))}
+   712→   712→                      </SelectContent>
+   713→   713→                    </Select>
+   714→   714→                  </div>
+   715→   715→
+   716→   716→                  <div className="space-y-2 mb-6">
+   717→   717→                    <Label htmlFor="comment" className="text-xs font-medium">
+   718→   718→                      {contact.comment}
+   719→   719→                    </Label>
+   720→   720→                    <Textarea
+   721→   721→                      id="comment"
+   722→   722→                      value={formData.comment}
+   723→   723→                      onChange={(e) =>
+   724→   724→                        setFormData((p) => ({ ...p, comment: e.target.value }))
+   725→   725→                      }
+   726→   726→                      placeholder={contact.commentPlaceholder}
+   727→   727→                      rows={4}
+   728→   728→                      className="resize-none"
+   729→   729→                    />
+   730→   730→                  </div>
+   731→   731→
+   732→   732→                  <Button
+   733→   733→                    type="submit"
+   734→   734→                    disabled={loading}
+   735→   735→                    className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
+   736→   736→                  >
+   737→   737→                    {loading ? (
+   738→   738→                      <span className="flex items-center gap-2">
+   739→   739→                        <svg
+   740→   740→                          className="animate-spin h-4 w-4"
+   741→   741→                          viewBox="0 0 24 24"
+   742→   742→                          fill="none"
+   743→   743→                        >
+   744→   744→                          <circle
+   745→   745→                            className="opacity-25"
+   746→   746→                            cx="12"
+   747→   747→                            cy="12"
+   748→   748→                            r="10"
+   749→   749→                            stroke="currentColor"
+   750→   750→                            strokeWidth="4"
+   751→   751→                          />
+   752→   752→                          <path
+   753→   753→                            className="opacity-75"
+   754→   754→                            fill="currentColor"
+   755→   755→                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+   756→   756→                          />
+   757→   757→                        </svg>
+   758→   758→                        {contact.submit}
+   759→   759→                      </span>
+   760→   760→                    ) : (
+   761→   761→                      <span className="flex items-center gap-2">
+   762→   762→                        <Send size={16} />
+   763→   763→                        {contact.submit}
+   764→   764→                      </span>
+   765→   765→                    )}
+   766→   766→                  </Button>
+   767→   767→                </form>
+   768→   768→              </FadeIn>
+   769→   769→            </div>
+   770→   770→          </div>
+   771→   771→        </section>
+   772→   772→      </main>
+   773→   773→
+   774→   774→      {/* ═══════════════════ FOOTER ═══════════════════ */}
+   775→   775→      <footer className="bg-[#0A0A0A] text-white mt-auto">
+   776→   776→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+   777→   777→          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
+   778→   778→            {/* Contacts */}
+   779→   779→            <div>
+   780→   780→              <p className="text-sm font-semibold tracking-tight mb-6">
+   781→   781→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   782→   782→              </p>
+   783→   783→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   784→   784→                {footer.contacts}
+   785→   785→              </h3>
+   786→   786→              <div className="space-y-3">
+   787→   787→                <a
+   788→   788→                  href="tel:+79892467798"
+   789→   789→                  className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
+   790→   790→                >
+   791→   791→                  <Phone size={15} className="text-red-500/80 flex-shrink-0" />
+   792→   792→                  +7 (989) 246-77-98
+   793→   793→                </a>
+   794→   794→                <div className="flex items-center gap-3 text-white/60 text-sm">
+   795→   795→                  <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
+   796→   796→                  {footer.address}
+   797→   797→                </div>
+   798→   798→              </div>
+   799→   799→            </div>
+   800→   800→
+   801→   801→            {/* Quick links */}
+   802→   802→            <div>
+   803→   803→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   804→   804→                {footer.quickLinks}
+   805→   805→              </h3>
+   806→   806→              <nav className="flex flex-col gap-3">
+   807→   807→                {navLinks.map((l) => (
+   808→   808→                  <button
+   809→   809→                    key={l.id}
+   810→   810→                    onClick={() => scrollTo(l.id)}
+   811→   811→                    className="text-left text-white/50 hover:text-white transition-colors text-sm"
+   812→   812→                  >
+   813→   813→                    {l.label}
+   814→   814→                  </button>
+   815→   815→                ))}
+   816→   816→              </nav>
+   817→   817→            </div>
+   818→   818→
+   819→   819→            {/* Social */}
+   820→   820→            <div>
+   821→   821→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   822→   822→                {footer.followMe}
+   823→   823→              </h3>
+   824→   824→              <div className="flex flex-col gap-3">
+   825→   825→                <a
+   826→   826→                  href="https://t.me/ilyaratnikov"
+   827→   827→                  target="_blank"
+   828→   828→                  rel="noopener noreferrer"
+   829→   829→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+   830→   830→                >
+   831→   831→                  <MessageCircle size={15} className="flex-shrink-0" />
+   832→   832→                  {footer.telegram}
+   833→   833→                </a>
+   834→   834→                <a
+   835→   835→                  href="#"
+   836→   836→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+   837→   837→                >
+   838→   838→                  <Globe size={15} className="flex-shrink-0" />
+   839→   839→                  {footer.vk}
+   840→   840→                </a>
+   841→   841→              </div>
+   842→   842→            </div>
+   843→   843→          </div>
+   844→   844→        </div>
+   845→   845→
+   846→   846→        {/* Bottom bar */}
+   847→   847→        <div className="border-t border-white/[0.06]">
+   848→   848→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+   849→   849→            <p className="text-white/40 text-xs">
+   850→   850→              &copy; 2025 {hero.name}. {footer.rights}
+   851→   851→            </p>
+   852→   852→            <p className="text-white/40 text-xs">{footer.madeIn}</p>
+   853→   853→          </div>
+   854→   854→        </div>
+   855→   855→      </footer>
+   856→   856→    </div>
+   857→   857→  );
+   858→   858→}

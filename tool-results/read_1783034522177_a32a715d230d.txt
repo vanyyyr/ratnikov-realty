@@ -1,0 +1,1180 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
+     4→import Image from "next/image";
+     5→import { useI18n } from "@/lib/i18n-context";
+     6→import { Button } from "@/components/ui/button";
+     7→import { Input } from "@/components/ui/input";
+     8→import { Textarea } from "@/components/ui/textarea";
+     9→import { Label } from "@/components/ui/label";
+    10→import { Card, CardContent } from "@/components/ui/card";
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from "@/components/ui/select";
+    18→import { toast } from "sonner";
+    19→import { Badge } from "@/components/ui/badge";
+    20→import {
+    21→  Sheet,
+    22→  SheetContent,
+    23→  SheetTrigger,
+    24→  SheetTitle,
+    25→} from "@/components/ui/sheet";
+    26→import {
+    27→  Dialog,
+    28→  DialogContent,
+    29→  DialogHeader,
+    30→  DialogTitle,
+    31→  DialogDescription,
+    32→} from "@/components/ui/dialog";
+    33→import {
+    34→  Accordion,
+    35→  AccordionContent,
+    36→  AccordionItem,
+    37→  AccordionTrigger,
+    38→} from "@/components/ui/accordion";
+    39→import {
+    40→  Tooltip,
+    41→  TooltipContent,
+    42→  TooltipProvider,
+    43→  TooltipTrigger,
+    44→} from "@/components/ui/tooltip";
+    45→import {
+    46→  Menu,
+    47→  BarChart3,
+    48→  ShieldCheck,
+    49→  Megaphone,
+    50→  Handshake,
+    51→  MessageCircle,
+    52→  ChevronDown,
+    53→  Phone,
+    54→  MapPin,
+    55→  Send,
+    56→  ArrowRight,
+    57→  ExternalLink,
+    58→  Quote,
+    59→  Star,
+    60→  Globe,
+    61→  PhoneCall,
+    62→} from "lucide-react";
+    63→
+    64→/* ──────────────────────────── helpers ──────────────────────────── */
+    65→
+    66→function FadeIn({
+    67→  children,
+    68→  className = "",
+    69→  delay = 0,
+    70→}: {
+    71→  children: ReactNode;
+    72→  className?: string;
+    73→  delay?: number;
+    74→}) {
+    75→  const ref = useRef<HTMLDivElement>(null);
+    76→  const [visible, setVisible] = useState(false);
+    77→
+    78→  useEffect(() => {
+    79→    const el = ref.current;
+    80→    if (!el) return;
+    81→    const obs = new IntersectionObserver(
+    82→      ([e]) => {
+    83→        if (e.isIntersecting) {
+    84→          setVisible(true);
+    85→          obs.disconnect();
+    86→        }
+    87→      },
+    88→      { threshold: 0.08 },
+    89→    );
+    90→    obs.observe(el);
+    91→    return () => obs.disconnect();
+    92→  }, []);
+    93→
+    94→  return (
+    95→    <div
+    96→      ref={ref}
+    97→      className={className}
+    98→      style={{
+    99→        opacity: visible ? 1 : 0,
+   100→        transform: visible ? "translateY(0)" : "translateY(24px)",
+   101→        transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
+   102→      }}
+   103→    >
+   104→      {children}
+   105→    </div>
+   106→  );
+   107→}
+   108→
+   109→function SectionLabel({ children }: { children: ReactNode }) {
+   110→  return (
+   111→    <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+   112→      {children}
+   113→    </span>
+   114→  );
+   115→}
+   116→
+   117→function SectionHeading({
+   118→  children,
+   119→  className = "",
+   120→}: {
+   121→  children: ReactNode;
+   122→  className?: string;
+   123→}) {
+   124→  return (
+   125→    <h2
+   126→      className={`text-3xl sm:text-4xl font-bold text-foreground tracking-tight ${className}`}
+   127→    >
+   128→      {children}
+   129→    </h2>
+   130→  );
+   131→}
+   132→
+   133→/* ──────────────────────────── page ──────────────────────────── */
+   134→
+   135→export default function Home() {
+   136→  const { locale, setLocale, t } = useI18n();
+   137→
+   138→  const nav = t("nav");
+   139→  const hero = t("hero");
+   140→  const about = t("about");
+   141→  const advantages = t("advantages");
+   142→  const services = t("services");
+   143→  const stats = t("stats");
+   144→  const reviews = t("reviews");
+   145→  const contact = t("contact");
+   146→  const faq = t("faq");
+   147→  const exitIntent = t("exitIntent");
+   148→  const floating = t("floating");
+   149→  const footer = t("footer");
+   150→
+   151→  /* state */
+   152→  const [scrolled, setScrolled] = useState(false);
+   153→  const [mobileOpen, setMobileOpen] = useState(false);
+   154→  const [formData, setFormData] = useState({
+   155→    name: "",
+   156→    phone: "",
+   157→    serviceType: "",
+   158→    comment: "",
+   159→  });
+   160→  const [loading, setLoading] = useState(false);
+   161→
+   162→  // Callback dialog state
+   163→  const [callbackOpen, setCallbackOpen] = useState(false);
+   164→  const [callbackForm, setCallbackForm] = useState({ name: "", phone: "" });
+   165→  const [callbackLoading, setCallbackLoading] = useState(false);
+   166→
+   167→  // Exit intent state
+   168→  const [exitIntentOpen, setExitIntentOpen] = useState(false);
+   169→  const [exitIntentForm, setExitIntentForm] = useState({ name: "", phone: "" });
+   170→  const [exitIntentLoading, setExitIntentLoading] = useState(false);
+   171→
+   172→  // Floating buttons visibility (hide on scroll down, show on scroll up)
+   173→  const [floatingVisible, setFloatingVisible] = useState(true);
+   174→
+   175→  /* scroll listener */
+   176→  useEffect(() => {
+   177→    let lastScrollY = window.scrollY;
+   178→    let ticking = false;
+   179→    const onScroll = () => {
+   180→      if (!ticking) {
+   181→        window.requestAnimationFrame(() => {
+   182→          const currentScrollY = window.scrollY;
+   183→          setScrolled(currentScrollY > 60);
+   184→          setFloatingVisible(currentScrollY < lastScrollY || currentScrollY < 100);
+   185→          lastScrollY = currentScrollY;
+   186→          ticking = false;
+   187→        });
+   188→        ticking = true;
+   189→      }
+   190→    };
+   191→    window.addEventListener("scroll", onScroll, { passive: true });
+   192→    return () => window.removeEventListener("scroll", onScroll);
+   193→  }, []);
+   194→
+   195→  const scrollTo = (id: string) => {
+   196→    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+   197→    setMobileOpen(false);
+   198→  };
+   199→
+   200→  /* form */
+   201→  const handleSubmit = async (e: FormEvent) => {
+   202→    e.preventDefault();
+   203→    if (!formData.name.trim() || !formData.phone.trim()) {
+   204→      toast.error(contact.required);
+   205→      return;
+   206→    }
+   207→    setLoading(true);
+   208→    try {
+   209→      const res = await fetch("/api/leads", {
+   210→        method: "POST",
+   211→        headers: { "Content-Type": "application/json" },
+   212→        body: JSON.stringify({
+   213→          name: formData.name,
+   214→          phone: formData.phone,
+   215→          serviceType: formData.serviceType || undefined,
+   216→          comment: formData.comment || undefined,
+   217→        }),
+   218→      });
+   219→      if (res.ok) {
+   220→        toast.success(contact.success);
+   221→        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
+   222→      } else {
+   223→        toast.error(contact.error);
+   224→      }
+   225→    } catch {
+   226→      toast.error(contact.error);
+   227→    } finally {
+   228→      setLoading(false);
+   229→    }
+   230→  };
+   231→
+   232→  /* advantage icons */
+   233→  const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
+   234→
+   235→  /* callback form handler */
+   236→  const handleCallbackSubmit = useCallback(async (e: FormEvent) => {
+   237→    e.preventDefault();
+   238→    if (!callbackForm.name.trim() || !callbackForm.phone.trim()) {
+   239→      toast.error(contact.required);
+   240→      return;
+   241→    }
+   242→    setCallbackLoading(true);
+   243→    try {
+   244→      const res = await fetch("/api/leads", {
+   245→        method: "POST",
+   246→        headers: { "Content-Type": "application/json" },
+   247→        body: JSON.stringify({
+   248→          name: callbackForm.name,
+   249→          phone: callbackForm.phone,
+   250→          serviceType: locale === "ru" ? "Обратный звонок" : "Callback",
+   251→        }),
+   252→      });
+   253→      if (res.ok) {
+   254→        toast.success(contact.callbackSuccess);
+   255→        setCallbackForm({ name: "", phone: "" });
+   256→        setCallbackOpen(false);
+   257→        sessionStorage.setItem("formSubmitted", "true");
+   258→      } else {
+   259→        toast.error(contact.error);
+   260→      }
+   261→    } catch {
+   262→      toast.error(contact.error);
+   263→    } finally {
+   264→      setCallbackLoading(false);
+   265→    }
+   266→  }, [callbackForm, locale, contact]);
+   267→
+   268→  /* exit intent form handler */
+   269→  const handleExitIntentSubmit = useCallback(async (e: FormEvent) => {
+   270→    e.preventDefault();
+   271→    if (!exitIntentForm.name.trim() || !exitIntentForm.phone.trim()) {
+   272→      toast.error(contact.required);
+   273→      return;
+   274→    }
+   275→    setExitIntentLoading(true);
+   276→    try {
+   277→      const res = await fetch("/api/leads", {
+   278→        method: "POST",
+   279→        headers: { "Content-Type": "application/json" },
+   280→        body: JSON.stringify({
+   281→          name: exitIntentForm.name,
+   282→          phone: exitIntentForm.phone,
+   283→          serviceType: "Exit Intent",
+   284→        }),
+   285→      });
+   286→      if (res.ok) {
+   287→        toast.success(exitIntent.success);
+   288→        setExitIntentForm({ name: "", phone: "" });
+   289→        setExitIntentOpen(false);
+   290→        sessionStorage.setItem("formSubmitted", "true");
+   291→      } else {
+   292→        toast.error(contact.error);
+   293→      }
+   294→    } catch {
+   295→      toast.error(contact.error);
+   296→    } finally {
+   297→      setExitIntentLoading(false);
+   298→    }
+   299→  }, [exitIntentForm, exitIntent, contact]);
+   300→
+   301→  /* exit intent listener */
+   302→  useEffect(() => {
+   303→    const handleMouseLeave = (e: MouseEvent) => {
+   304→      if (e.clientY < 5 && !sessionStorage.getItem("exitIntentShown") && !sessionStorage.getItem("formSubmitted")) {
+   305→        setExitIntentOpen(true);
+   306→        sessionStorage.setItem("exitIntentShown", "true");
+   307→      }
+   308→    };
+   309→    document.documentElement.addEventListener("mouseleave", handleMouseLeave);
+   310→    return () => document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
+   311→  }, []);
+   312→
+   313→  /* nav links */
+   314→  const navLinks = [
+   315→    { label: nav.about, id: "about" },
+   316→    { label: nav.services, id: "services" },
+   317→    { label: nav.reviews, id: "reviews" },
+   318→    { label: nav.contact, id: "contact" },
+   319→  ];
+   320→
+   321→  return (
+   322→    <div className="min-h-screen flex flex-col bg-white">
+   323→      {/* ═══════════════════ NAVBAR ═══════════════════ */}
+   324→      <header
+   325→        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+   326→          scrolled
+   327→            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+   328→            : "bg-transparent"
+   329→        }`}
+   330→      >
+   331→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+   332→          {/* Logo */}
+   333→          <button
+   334→            onClick={() => scrollTo("hero")}
+   335→            className="flex items-center select-none"
+   336→          >
+   337→            <span
+   338→              className={`text-[14px] font-semibold tracking-tight transition-colors ${
+   339→                scrolled ? "text-foreground" : "text-white"
+   340→              }`}
+   341→            >
+   342→              {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   343→            </span>
+   344→          </button>
+   345→
+   346→          {/* Desktop nav links */}
+   347→          <nav className="hidden lg:flex items-center gap-8">
+   348→            {navLinks.map((l) => (
+   349→              <button
+   350→                key={l.id}
+   351→                onClick={() => scrollTo(l.id)}
+   352→                className={`text-[13px] font-medium transition-colors ${
+   353→                  scrolled
+   354→                    ? "text-foreground/70 hover:text-red-700"
+   355→                    : "text-white/70 hover:text-white"
+   356→                }`}
+   357→              >
+   358→                {l.label}
+   359→              </button>
+   360→            ))}
+   361→          </nav>
+   362→
+   363→          {/* Desktop right side */}
+   364→          <div className="hidden lg:flex items-center gap-3">
+   365→            {/* Lang toggle */}
+   366→            <div className="flex items-center bg-black/5 rounded-md p-[3px]">
+   367→              {(["ru", "en"] as const).map((lng) => (
+   368→                <button
+   369→                  key={lng}
+   370→                  onClick={() => setLocale(lng)}
+   371→                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-[5px] transition-all duration-200 ${
+   372→                    locale === lng
+   373→                      ? "bg-red-700 text-white shadow-sm"
+   374→                      : scrolled
+   375→                        ? "text-foreground/50 hover:text-foreground"
+   376→                        : "text-white/50 hover:text-white"
+   377→                  }`}
+   378→                >
+   379→                  {lng}
+   380→                </button>
+   381→              ))}
+   382→            </div>
+   383→
+   384→            <Button
+   385→              onClick={() => scrollTo("contact")}
+   386→              className="bg-red-700 hover:bg-red-800 text-white h-9 px-5 text-[13px] font-medium rounded-md"
+   387→              size="default"
+   388→            >
+   389→              {hero.cta}
+   390→            </Button>
+   391→          </div>
+   392→
+   393→          {/* Mobile hamburger */}
+   394→          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+   395→            <SheetTrigger asChild>
+   396→              <button
+   397→                className={`lg:hidden transition-colors ${
+   398→                  scrolled ? "text-foreground" : "text-white"
+   399→                }`}
+   400→                aria-label="Menu"
+   401→              >
+   402→                <Menu size={24} />
+   403→              </button>
+   404→            </SheetTrigger>
+   405→            <SheetContent side="right" className="w-[300px] pt-10">
+   406→              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
+   407→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   408→              </SheetTitle>
+   409→
+   410→              <nav className="flex flex-col gap-1">
+   411→                {navLinks.map((l) => (
+   412→                  <button
+   413→                    key={l.id}
+   414→                    onClick={() => scrollTo(l.id)}
+   415→                    className="text-left text-[15px] font-medium text-foreground/80 hover:text-red-700 transition-colors py-3 border-b border-border/50"
+   416→                  >
+   417→                    {l.label}
+   418→                  </button>
+   419→                ))}
+   420→              </nav>
+   421→
+   422→              <div className="flex items-center bg-gray-100 rounded-md p-[3px] w-fit mt-8">
+   423→                {(["ru", "en"] as const).map((lng) => (
+   424→                  <button
+   425→                    key={lng}
+   426→                    onClick={() => setLocale(lng)}
+   427→                    className={`px-3 py-1.5 text-[12px] font-bold uppercase rounded-[5px] transition-all ${
+   428→                      locale === lng
+   429→                        ? "bg-red-700 text-white"
+   430→                        : "text-foreground/50"
+   431→                    }`}
+   432→                  >
+   433→                    {lng}
+   434→                  </button>
+   435→                ))}
+   436→              </div>
+   437→
+   438→              <Button
+   439→                onClick={() => scrollTo("contact")}
+   440→                className="bg-red-700 hover:bg-red-800 text-white w-full h-11 mt-6 text-[14px] font-medium"
+   441→              >
+   442→                {hero.cta}
+   443→              </Button>
+   444→            </SheetContent>
+   445→          </Sheet>
+   446→        </div>
+   447→      </header>
+   448→
+   449→      <main className="flex-1">
+   450→        {/* ═══════════════════ HERO ═══════════════════ */}
+   451→        <section
+   452→          id="hero"
+   453→          className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
+   454→        >
+   455→          {/* background layers */}
+   456→          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" />
+   457→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" />
+   458→
+   459→          {/* thin red accent line at top */}
+   460→          <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
+   461→
+   462→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
+   463→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   464→              {/* Text content */}
+   465→              <div className="text-center lg:text-left order-2 lg:order-1">
+   466→                <FadeIn>
+   467→                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
+   468→                    {hero.greeting}
+   469→                  </p>
+   470→                </FadeIn>
+   471→
+   472→                <FadeIn delay={0.1}>
+   473→                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+   474→                    {hero.name}
+   475→                  </h1>
+   476→                </FadeIn>
+   477→
+   478→                <FadeIn delay={0.2}>
+   479→                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+   480→                    {hero.title}
+   481→                  </p>
+   482→                </FadeIn>
+   483→
+   484→                <FadeIn delay={0.3}>
+   485→                  <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+   486→                    {hero.subtitle}
+   487→                  </p>
+   488→                </FadeIn>
+   489→
+   490→                <FadeIn delay={0.4}>
+   491→                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+   492→                    <Button
+   493→                      onClick={() => scrollTo("contact")}
+   494→                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow"
+   495→                    >
+   496→                      {hero.cta}
+   497→                      <ArrowRight size={17} />
+   498→                    </Button>
+   499→                    <a
+   500→                      href="https://cian.ru/cat.php?deal_type=sale&engine_version=extended"
+   501→                      target="_blank"
+   502→                      rel="noopener noreferrer"
+   503→                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
+   504→                    >
+   505→                      {hero.cian}
+   506→                      <ExternalLink size={15} />
+   507→                    </a>
+   508→                  </div>
+   509→                </FadeIn>
+   510→              </div>
+   511→
+   512→              {/* Photo */}
+   513→              <FadeIn delay={0.3} className="order-1 lg:order-2 flex justify-center lg:justify-end">
+   514→                <div className="relative">
+   515→                  <div className="absolute -left-2 top-6 bottom-6 w-[3px] bg-gradient-to-b from-red-700 via-red-600 to-red-800 rounded-full hidden sm:block" />
+   516→                  <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10">
+   517→                    <Image
+   518→                      src="/hero-photo.jpg"
+   519→                      alt={hero.name}
+   520→                      width={380}
+   521→                      height={507}
+   522→                      className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
+   523→                      priority
+   524→                      fetchPriority="high"
+   525→                    />
+   526→                  </div>
+   527→                  {/* Decorative corner */}
+   528→                  <div className="absolute -bottom-3 -right-3 w-20 h-20 border-2 border-red-700/20 rounded-2xl -z-10 hidden sm:block" />
+   529→                </div>
+   530→              </FadeIn>
+   531→            </div>
+   532→          </div>
+   533→
+   534→          {/* Scroll indicator */}
+   535→          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+   536→            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
+   537→              {hero.scroll}
+   538→            </span>
+   539→            <ChevronDown className="text-white/50 animate-bounce" size={18} />
+   540→          </div>
+   541→        </section>
+   542→
+   543→        {/* ═══════════════════ ABOUT ═══════════════════ */}
+   544→        <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
+   545→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   546→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   547→              {/* Photo */}
+   548→              <FadeIn>
+   549→                <div className="relative max-w-md mx-auto lg:mx-0">
+   550→                  <div className="relative rounded-2xl overflow-hidden shadow-xl">
+   551→                    <Image
+   552→                      src="/hero-photo.jpg"
+   553→                      alt={hero.name}
+   554→                      width={600}
+   555→                      height={800}
+   556→                      className="w-full h-auto object-cover"
+   557→                      loading="lazy"
+   558→                    />
+   559→                  </div>
+   560→                  {/* Decorative shapes */}
+   561→                  <div className="absolute -bottom-4 -right-4 w-28 h-28 bg-red-700/5 rounded-2xl -z-10" />
+   562→                  <div className="absolute -top-4 -left-4 w-16 h-16 border-2 border-red-700/15 rounded-xl -z-10" />
+   563→                </div>
+   564→              </FadeIn>
+   565→
+   566→              {/* Text */}
+   567→              <div>
+   568→                <FadeIn>
+   569→                  <SectionLabel>{about.label}</SectionLabel>
+   570→                  <SectionHeading className="mb-6">{about.title}</SectionHeading>
+   571→                </FadeIn>
+   572→
+   573→                <FadeIn delay={0.1}>
+   574→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+   575→                    {about.description}
+   576→                  </p>
+   577→                </FadeIn>
+   578→
+   579→                {/* Mission box */}
+   580→                <FadeIn delay={0.2}>
+   581→                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
+   582→                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
+   583→                      {about.mission}
+   584→                    </h3>
+   585→                    <p className="text-muted-foreground text-sm leading-relaxed">
+   586→                      {about.missionText}
+   587→                    </p>
+   588→                  </div>
+   589→                </FadeIn>
+   590→
+   591→                <FadeIn delay={0.3}>
+   592→                  <Badge className="bg-red-700 text-white hover:bg-red-800 text-xs px-4 py-1.5 rounded-md font-medium">
+   593→                    {about.partner}
+   594→                  </Badge>
+   595→                </FadeIn>
+   596→              </div>
+   597→            </div>
+   598→          </div>
+   599→        </section>
+   600→
+   601→        {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
+   602→        <section className="py-20 sm:py-28 bg-gray-50">
+   603→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   604→            <FadeIn className="text-center mb-14 sm:mb-16">
+   605→              <SectionLabel>{advantages.label}</SectionLabel>
+   606→              <SectionHeading>{advantages.title}</SectionHeading>
+   607→            </FadeIn>
+   608→
+   609→            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+   610→              {advantages.items.map((item, i) => {
+   611→                const Icon = advIcons[i];
+   612→                return (
+   613→                  <FadeIn key={i} delay={i * 0.1}>
+   614→                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   615→                      <CardContent className="p-6 sm:p-8">
+   616→                        <div className="flex items-start gap-4">
+   617→                          <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
+   618→                            <Icon
+   619→                              size={21}
+   620→                              className="text-red-700 group-hover:text-white transition-colors duration-300"
+   621→                            />
+   622→                          </div>
+   623→                          <div className="min-w-0">
+   624→                            <h3 className="text-[15px] sm:text-base font-semibold text-foreground mb-2 leading-snug">
+   625→                              {item.title}
+   626→                            </h3>
+   627→                            <p className="text-muted-foreground text-sm leading-relaxed">
+   628→                              {item.text}
+   629→                            </p>
+   630→                          </div>
+   631→                        </div>
+   632→                      </CardContent>
+   633→                    </Card>
+   634→                  </FadeIn>
+   635→                );
+   636→              })}
+   637→            </div>
+   638→          </div>
+   639→        </section>
+   640→
+   641→        {/* ═══════════════════ SERVICES ═══════════════════ */}
+   642→        <section id="services" className="py-20 sm:py-28 bg-white">
+   643→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   644→            <FadeIn className="text-center mb-14 sm:mb-16">
+   645→              <SectionLabel>{services.label}</SectionLabel>
+   646→              <SectionHeading className="mb-4">{services.title}</SectionHeading>
+   647→              <p className="text-muted-foreground text-[15px] sm:text-base max-w-2xl mx-auto leading-relaxed">
+   648→                {services.subtitle}
+   649→              </p>
+   650→            </FadeIn>
+   651→
+   652→            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+   653→              {services.items.map((item, i) => (
+   654→                <FadeIn key={i} delay={i * 0.1}>
+   655→                  <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   656→                    <CardContent className="p-6 sm:p-8 flex flex-col h-full">
+   657→                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
+   658→                        {String(i + 1).padStart(2, "0")}
+   659→                      </span>
+   660→                      <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
+   661→                        {item.title}
+   662→                      </h3>
+   663→                      <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+   664→                        {item.text}
+   665→                      </p>
+   666→                    </CardContent>
+   667→                  </Card>
+   668→                </FadeIn>
+   669→              ))}
+   670→            </div>
+   671→          </div>
+   672→        </section>
+   673→
+   674→        {/* ═══════════════════ STATS ═══════════════════ */}
+   675→        <section className="py-20 sm:py-24 bg-[#0A0A0A] relative overflow-hidden">
+   676→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(185,28,28,0.06),transparent)]" />
+   677→
+   678→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   679→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+   680→              {stats.items.map((item, i) => (
+   681→                <FadeIn key={i} delay={i * 0.1} className="text-center">
+   682→                  <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
+   683→                    {item.value}
+   684→                  </div>
+   685→                  <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+   686→                    {item.label}
+   687→                  </div>
+   688→                </FadeIn>
+   689→              ))}
+   690→            </div>
+   691→          </div>
+   692→        </section>
+   693→
+   694→        {/* ═══════════════════ REVIEWS ═══════════════════ */}
+   695→        <section id="reviews" className="py-20 sm:py-28 bg-white">
+   696→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   697→            <FadeIn className="text-center mb-14 sm:mb-16">
+   698→              <SectionLabel>{reviews.label}</SectionLabel>
+   699→              <SectionHeading>{reviews.title}</SectionHeading>
+   700→            </FadeIn>
+   701→
+   702→            <FadeIn>
+   703→              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+   704→                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+   705→                  <Quote size={28} className="text-red-700/40" />
+   706→                </div>
+   707→                <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+   708→                  {reviews.placeholder}
+   709→                </p>
+   710→                <div className="flex items-center justify-center gap-1.5">
+   711→                  {[...Array(5)].map((_, i) => (
+   712→                    <Star
+   713→                      key={i}
+   714→                      size={18}
+   715→                      className="text-gray-200 fill-gray-200"
+   716→                    />
+   717→                  ))}
+   718→                </div>
+   719→              </div>
+   720→            </FadeIn>
+   721→          </div>
+   722→        </section>
+   723→
+   724→        {/* ═══════════════════ FAQ ═══════════════════ */}
+   725→        <section id="faq" className="py-20 sm:py-28 bg-gray-50">
+   726→          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   727→            <FadeIn className="text-center mb-14 sm:mb-16">
+   728→              <SectionLabel>{faq.label}</SectionLabel>
+   729→              <SectionHeading>{faq.title}</SectionHeading>
+   730→            </FadeIn>
+   731→
+   732→            <FadeIn delay={0.1}>
+   733→              <Accordion type="single" collapsible className="w-full">
+   734→                {faq.items.map((item, i) => (
+   735→                  <AccordionItem
+   736→                    key={i}
+   737→                    value={`faq-${i}`}
+   738→                    className="border-gray-200/80 bg-white rounded-xl px-6 mb-3 shadow-sm data-[state=open]:shadow-md transition-shadow"
+   739→                  >
+   740→                    <AccordionTrigger className="text-left text-[15px] font-semibold text-foreground hover:text-red-700 hover:no-underline py-5">
+   741→                      {item.question}
+   742→                    </AccordionTrigger>
+   743→                    <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-5">
+   744→                      {item.answer}
+   745→                    </AccordionContent>
+   746→                  </AccordionItem>
+   747→                ))}
+   748→              </Accordion>
+   749→            </FadeIn>
+   750→          </div>
+   751→        </section>
+   752→
+   753→        {/* ═══════════════════ CONTACT ═══════════════════ */}
+   754→        <section id="contact" className="py-20 sm:py-28 bg-white">
+   755→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   756→            <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
+   757→              {/* Left: info */}
+   758→              <div className="lg:col-span-2">
+   759→                <FadeIn>
+   760→                  <SectionLabel>{contact.label}</SectionLabel>
+   761→                  <SectionHeading className="mb-4">{contact.title}</SectionHeading>
+   762→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-10">
+   763→                    {contact.subtitle}
+   764→                  </p>
+   765→                </FadeIn>
+   766→
+   767→                <FadeIn delay={0.15}>
+   768→                  <div className="flex flex-col gap-3">
+   769→                    <Button
+   770→                      asChild
+   771→                      variant="outline"
+   772→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   773→                    >
+   774→                      <a
+   775→                        href="https://t.me/ilyaratnikov"
+   776→                        target="_blank"
+   777→                        rel="noopener noreferrer"
+   778→                      >
+   779→                        <MessageCircle size={19} className="text-red-700" />
+   780→                        Telegram
+   781→                      </a>
+   782→                    </Button>
+   783→                    <Button
+   784→                      asChild
+   785→                      variant="outline"
+   786→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   787→                    >
+   788→                      <a href="https://max.ru" target="_blank" rel="noopener noreferrer">
+   789→                        <MessageCircle size={19} className="text-red-700" />
+   790→                        Макс
+   791→                      </a>
+   792→                    </Button>
+   793→                    <Button
+   794→                      onClick={() => setCallbackOpen(true)}
+   795→                      className="h-12 justify-start gap-3 text-[14px] font-medium bg-red-700 hover:bg-red-800 text-white rounded-lg"
+   796→                    >
+   797→                      <PhoneCall size={19} />
+   798→                      {contact.callbackButton}
+   799→                    </Button>
+   800→                  </div>
+   801→                </FadeIn>
+   802→
+   803→                {/* Contact info below messenger buttons */}
+   804→                <FadeIn delay={0.25}>
+   805→                  <div className="mt-10 space-y-4">
+   806→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   807→                      <Phone size={16} className="text-red-700/70 flex-shrink-0" />
+   808→                      <a href="tel:+79892467798" className="hover:text-red-700 transition-colors">+7 (989) 246-77-98</a>
+   809→                    </div>
+   810→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   811→                      <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
+   812→                      <span>{footer.address}</span>
+   813→                    </div>
+   814→                  </div>
+   815→                </FadeIn>
+   816→              </div>
+   817→
+   818→              {/* Right: form */}
+   819→              <FadeIn delay={0.1} className="lg:col-span-3">
+   820→                <form
+   821→                  onSubmit={handleSubmit}
+   822→                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
+   823→                >
+   824→                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
+   825→                    <div className="space-y-2">
+   826→                      <Label htmlFor="name" className="text-xs font-medium">
+   827→                        {contact.name} *
+   828→                      </Label>
+   829→                      <Input
+   830→                        id="name"
+   831→                        value={formData.name}
+   832→                        onChange={(e) =>
+   833→                          setFormData((p) => ({ ...p, name: e.target.value }))
+   834→                        }
+   835→                        placeholder={contact.name}
+   836→                        required
+   837→                        className="h-11"
+   838→                      />
+   839→                    </div>
+   840→                    <div className="space-y-2">
+   841→                      <Label htmlFor="phone" className="text-xs font-medium">
+   842→                        {contact.phone} *
+   843→                      </Label>
+   844→                      <Input
+   845→                        id="phone"
+   846→                        type="tel"
+   847→                        value={formData.phone}
+   848→                        onChange={(e) =>
+   849→                          setFormData((p) => ({ ...p, phone: e.target.value }))
+   850→                        }
+   851→                        placeholder={contact.phone}
+   852→                        required
+   853→                        className="h-11"
+   854→                      />
+   855→                    </div>
+   856→                  </div>
+   857→
+   858→                  <div className="space-y-2 mb-5">
+   859→                    <Label className="text-xs font-medium">
+   860→                      {contact.serviceType}
+   861→                    </Label>
+   862→                    <Select
+   863→                      value={formData.serviceType}
+   864→                      onValueChange={(v) =>
+   865→                        setFormData((p) => ({ ...p, serviceType: v }))
+   866→                      }
+   867→                    >
+   868→                      <SelectTrigger className="w-full h-11">
+   869→                        <SelectValue placeholder={contact.serviceType} />
+   870→                      </SelectTrigger>
+   871→                      <SelectContent>
+   872→                        {contact.serviceTypes.map((type) => (
+   873→                          <SelectItem key={type} value={type}>
+   874→                            {type}
+   875→                          </SelectItem>
+   876→                        ))}
+   877→                      </SelectContent>
+   878→                    </Select>
+   879→                  </div>
+   880→
+   881→                  <div className="space-y-2 mb-6">
+   882→                    <Label htmlFor="comment" className="text-xs font-medium">
+   883→                      {contact.comment}
+   884→                    </Label>
+   885→                    <Textarea
+   886→                      id="comment"
+   887→                      value={formData.comment}
+   888→                      onChange={(e) =>
+   889→                        setFormData((p) => ({ ...p, comment: e.target.value }))
+   890→                      }
+   891→                      placeholder={contact.commentPlaceholder}
+   892→                      rows={4}
+   893→                      className="resize-none"
+   894→                    />
+   895→                  </div>
+   896→
+   897→                  <Button
+   898→                    type="submit"
+   899→                    disabled={loading}
+   900→                    className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
+   901→                  >
+   902→                    {loading ? (
+   903→                      <span className="flex items-center gap-2">
+   904→                        <svg
+   905→                          className="animate-spin h-4 w-4"
+   906→                          viewBox="0 0 24 24"
+   907→                          fill="none"
+   908→                        >
+   909→                          <circle
+   910→                            className="opacity-25"
+   911→                            cx="12"
+   912→                            cy="12"
+   913→                            r="10"
+   914→                            stroke="currentColor"
+   915→                            strokeWidth="4"
+   916→                          />
+   917→                          <path
+   918→                            className="opacity-75"
+   919→                            fill="currentColor"
+   920→                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+   921→                          />
+   922→                        </svg>
+   923→                        {contact.submit}
+   924→                      </span>
+   925→                    ) : (
+   926→                      <span className="flex items-center gap-2">
+   927→                        <Send size={16} />
+   928→                        {contact.submit}
+   929→                      </span>
+   930→                    )}
+   931→                  </Button>
+   932→                </form>
+   933→              </FadeIn>
+   934→            </div>
+   935→          </div>
+   936→        </section>
+   937→      </main>
+   938→
+   939→      {/* ═══════════════════ FOOTER ═══════════════════ */}
+   940→      <footer className="bg-[#0A0A0A] text-white mt-auto">
+   941→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+   942→          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
+   943→            {/* Contacts */}
+   944→            <div>
+   945→              <p className="text-sm font-semibold tracking-tight mb-6">
+   946→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   947→              </p>
+   948→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   949→                {footer.contacts}
+   950→              </h3>
+   951→              <div className="space-y-3">
+   952→                <a
+   953→                  href="tel:+79892467798"
+   954→                  className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
+   955→                >
+   956→                  <Phone size={15} className="text-red-500/80 flex-shrink-0" />
+   957→                  +7 (989) 246-77-98
+   958→                </a>
+   959→                <div className="flex items-center gap-3 text-white/60 text-sm">
+   960→                  <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
+   961→                  {footer.address}
+   962→                </div>
+   963→              </div>
+   964→            </div>
+   965→
+   966→            {/* Quick links */}
+   967→            <div>
+   968→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   969→                {footer.quickLinks}
+   970→              </h3>
+   971→              <nav className="flex flex-col gap-3">
+   972→                {navLinks.map((l) => (
+   973→                  <button
+   974→                    key={l.id}
+   975→                    onClick={() => scrollTo(l.id)}
+   976→                    className="text-left text-white/50 hover:text-white transition-colors text-sm"
+   977→                  >
+   978→                    {l.label}
+   979→                  </button>
+   980→                ))}
+   981→              </nav>
+   982→            </div>
+   983→
+   984→            {/* Social */}
+   985→            <div>
+   986→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   987→                {footer.followMe}
+   988→              </h3>
+   989→              <div className="flex flex-col gap-3">
+   990→                <a
+   991→                  href="https://t.me/ilyaratnikov"
+   992→                  target="_blank"
+   993→                  rel="noopener noreferrer"
+   994→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+   995→                >
+   996→                  <MessageCircle size={15} className="flex-shrink-0" />
+   997→                  {footer.telegram}
+   998→                </a>
+   999→                <a
+  1000→                  href="#"
+  1001→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+  1002→                >
+  1003→                  <Globe size={15} className="flex-shrink-0" />
+  1004→                  {footer.vk}
+  1005→                </a>
+  1006→              </div>
+  1007→            </div>
+  1008→          </div>
+  1009→        </div>
+  1010→
+  1011→        {/* Bottom bar */}
+  1012→        <div className="border-t border-white/[0.06]">
+  1013→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+  1014→            <p className="text-white/40 text-xs">
+  1015→              &copy; 2025 {hero.name}. {footer.rights}
+  1016→            </p>
+  1017→            <p className="text-white/40 text-xs">{footer.madeIn}</p>
+  1018→          </div>
+  1019→        </div>
+  1020→      </footer>
+  1021→
+  1022→      {/* ═══════════════════ FLOATING BUTTONS ═══════════════════ */}
+  1023→      <TooltipProvider delayDuration={300}>
+  1024→        <div
+  1025→          className={`fixed bottom-6 right-6 z-40 flex flex-col gap-3 transition-all duration-300 ${
+  1026→            floatingVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+  1027→          }`}
+  1028→        >
+  1029→          <Tooltip>
+  1030→            <TooltipTrigger asChild>
+  1031→              <a
+  1032→                href="https://t.me/ilyaratnikov"
+  1033→                target="_blank"
+  1034→                rel="noopener noreferrer"
+  1035→                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#229ED9] hover:bg-[#1a8bc4] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+  1036→                aria-label={floating.telegram}
+  1037→              >
+  1038→                <Send size={22} className="sm:w-5 sm:h-5" />
+  1039→              </a>
+  1040→            </TooltipTrigger>
+  1041→            <TooltipContent side="left" className="text-xs font-medium">
+  1042→              {floating.telegram}
+  1043→            </TooltipContent>
+  1044→          </Tooltip>
+  1045→
+  1046→          <Tooltip>
+  1047→            <TooltipTrigger asChild>
+  1048→              <a
+  1049→                href="https://max.ru"
+  1050→                target="_blank"
+  1051→                rel="noopener noreferrer"
+  1052→                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#1a1a1a] hover:bg-[#333] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+  1053→                aria-label={floating.max}
+  1054→              >
+  1055→                <MessageCircle size={22} className="sm:w-5 sm:h-5" />
+  1056→              </a>
+  1057→            </TooltipTrigger>
+  1058→            <TooltipContent side="left" className="text-xs font-medium">
+  1059→              {floating.max}
+  1060→            </TooltipContent>
+  1061→          </Tooltip>
+  1062→        </div>
+  1063→      </TooltipProvider>
+  1064→
+  1065→      {/* ═══════════════════ CALLBACK DIALOG ═══════════════════ */}
+  1066→      <Dialog open={callbackOpen} onOpenChange={setCallbackOpen}>
+  1067→        <DialogContent className="sm:max-w-md">
+  1068→          <DialogHeader>
+  1069→            <DialogTitle className="text-xl font-bold">{contact.callbackTitle}</DialogTitle>
+  1070→            <DialogDescription className="text-muted-foreground text-sm">
+  1071→              {contact.callbackDescription}
+  1072→            </DialogDescription>
+  1073→          </DialogHeader>
+  1074→          <form onSubmit={handleCallbackSubmit} className="space-y-4 mt-2">
+  1075→            <div className="space-y-2">
+  1076→              <Label htmlFor="cb-name" className="text-xs font-medium">{contact.name} *</Label>
+  1077→              <Input
+  1078→                id="cb-name"
+  1079→                value={callbackForm.name}
+  1080→                onChange={(e) => setCallbackForm((p) => ({ ...p, name: e.target.value }))}
+  1081→                placeholder={contact.name}
+  1082→                required
+  1083→                className="h-11"
+  1084→              />
+  1085→            </div>
+  1086→            <div className="space-y-2">
+  1087→              <Label htmlFor="cb-phone" className="text-xs font-medium">{contact.phone} *</Label>
+  1088→              <Input
+  1089→                id="cb-phone"
+  1090→                type="tel"
+  1091→                value={callbackForm.phone}
+  1092→                onChange={(e) => setCallbackForm((p) => ({ ...p, phone: e.target.value }))}
+  1093→                placeholder={contact.phone}
+  1094→                required
+  1095→                className="h-11"
+  1096→              />
+  1097→            </div>
+  1098→            <Button
+  1099→              type="submit"
+  1100→              disabled={callbackLoading}
+  1101→              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+  1102→            >
+  1103→              {callbackLoading ? (
+  1104→                <span className="flex items-center gap-2">
+  1105→                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+  1106→                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+  1107→                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  1108→                  </svg>
+  1109→                  {contact.callbackSubmit}
+  1110→                </span>
+  1111→              ) : (
+  1112→                <span className="flex items-center gap-2">
+  1113→                  <PhoneCall size={16} />
+  1114→                  {contact.callbackSubmit}
+  1115→                </span>
+  1116→              )}
+  1117→            </Button>
+  1118→          </form>
+  1119→        </DialogContent>
+  1120→      </Dialog>
+  1121→
+  1122→      {/* ═══════════════════ EXIT INTENT DIALOG ═══════════════════ */}
+  1123→      <Dialog open={exitIntentOpen} onOpenChange={setExitIntentOpen}>
+  1124→        <DialogContent className="sm:max-w-md">
+  1125→          <DialogHeader>
+  1126→            <DialogTitle className="text-2xl font-bold text-red-700">{exitIntent.title}</DialogTitle>
+  1127→            <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
+  1128→              {exitIntent.description}
+  1129→            </DialogDescription>
+  1130→          </DialogHeader>
+  1131→          <form onSubmit={handleExitIntentSubmit} className="space-y-4 mt-2">
+  1132→            <div className="space-y-2">
+  1133→              <Label htmlFor="ei-name" className="text-xs font-medium">{exitIntent.name} *</Label>
+  1134→              <Input
+  1135→                id="ei-name"
+  1136→                value={exitIntentForm.name}
+  1137→                onChange={(e) => setExitIntentForm((p) => ({ ...p, name: e.target.value }))}
+  1138→                placeholder={exitIntent.name}
+  1139→                required
+  1140→                className="h-11"
+  1141→              />
+  1142→            </div>
+  1143→            <div className="space-y-2">
+  1144→              <Label htmlFor="ei-phone" className="text-xs font-medium">{exitIntent.phone} *</Label>
+  1145→              <Input
+  1146→                id="ei-phone"
+  1147→                type="tel"
+  1148→                value={exitIntentForm.phone}
+  1149→                onChange={(e) => setExitIntentForm((p) => ({ ...p, phone: e.target.value }))}
+  1150→                placeholder={exitIntent.phone}
+  1151→                required
+  1152→                className="h-11"
+  1153→              />
+  1154→            </div>
+  1155→            <Button
+  1156→              type="submit"
+  1157→              disabled={exitIntentLoading}
+  1158→              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+  1159→            >
+  1160→              {exitIntentLoading ? (
+  1161→                <span className="flex items-center gap-2">
+  1162→                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+  1163→                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+  1164→                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  1165→                  </svg>
+  1166→                  {exitIntent.submit}
+  1167→                </span>
+  1168→              ) : (
+  1169→                <span className="flex items-center gap-2">
+  1170→                  <Send size={16} />
+  1171→                  {exitIntent.submit}
+  1172→                </span>
+  1173→              )}
+  1174→            </Button>
+  1175→          </form>
+  1176→        </DialogContent>
+  1177→      </Dialog>
+  1178→    </div>
+  1179→  );
+  1180→}

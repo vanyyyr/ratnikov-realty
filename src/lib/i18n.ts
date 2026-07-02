@@ -112,6 +112,54 @@ export const translations = {
       success: "Заявка отправлена! Я свяжусь с вами в ближайшее время.",
       error: "Произошла ошибка. Попробуйте ещё раз.",
       required: "Обязательное поле",
+      duplicateWarning: "Такой номер уже зарегистрирован. Мы свяжемся с вами повторно.",
+      callbackButton: "Перезвоните мне",
+      callbackTitle: "Обратный звонок",
+      callbackDescription: "Оставьте контактные данные и я перезвоню вам в удобное время.",
+      callbackSubmit: "Перезвоните",
+      callbackSuccess: "Заявка на звонок отправлена! Я скоро свяжусь с вами.",
+    },
+    faq: {
+      label: "FAQ",
+      title: "Частые вопросы",
+      items: [
+        {
+          question: "Как выбрать район для покупки?",
+          answer: "Определите приоритеты: близость к метро, школам, паркам и инфраструктуре. Я помогу проанализировать районы с учётом вашего бюджета и образа жизни, предложив несколько вариантов для сравнения."
+        },
+        {
+          question: "Какие документы нужны для сделки?",
+          answer: "Для покупки потребуется паспорт, для продажи — выписка из ЕГРН, правоустанавливающие документы и справки об отсутствии обременений. Я подготовлю полный пакет документов и проверю их юридическую чистоту."
+        },
+        {
+          question: "Как проверить юридическую чистоту?",
+          answer: "Проверяю через Росреестр, суды и ФССП: обременения, аресты, долги по ЖКХ, правоустанавливающие документы и историю перехода прав. Это исключает риски оспаривания сделки после подписания договора."
+        },
+        {
+          question: "Сколько времени занимает сделка?",
+          answer: "Стандартная сделка купли-продажи занимает 2–4 недели от подписания договора до регистрации права собственности. Экспресс-сопровождение при готовом покупателе сокращает срок до 3–5 дней."
+        },
+        {
+          question: "Что такое экспресс-сопровождение?",
+          answer: "Это услуга для клиентов, у которых уже есть покупатель или продавец. Я беру на себя проверку документов, подготовку договора, сопровождение сделки и регистрацию перехода права."
+        },
+        {
+          question: "Есть ли скидки на новостройки?",
+          answer: "Да, как партнёр Setl Group я предоставляю скидку 2% на объекты холдинга. Также отслеживаю акции и специальные предложения других застройщиков, что позволяет дополнительно сэкономить."
+        },
+      ],
+    },
+    exitIntent: {
+      title: "Подождите!",
+      description: "Оставьте заявку и получите бесплатную консультацию по недвижимости",
+      name: "Ваше имя",
+      phone: "Телефон",
+      submit: "Получить консультацию",
+      success: "Спасибо! Я свяжусь с вами в ближайшее время.",
+    },
+    floating: {
+      telegram: "Написать в Telegram",
+      max: "Написать в Max",
     },
     footer: {
       rights: "Все права защищены.",
@@ -236,6 +284,54 @@ export const translations = {
         "Request sent! I will contact you shortly.",
       error: "An error occurred. Please try again.",
       required: "Required field",
+      duplicateWarning: "This number is already registered. We will contact you again.",
+      callbackButton: "Call Me Back",
+      callbackTitle: "Callback Request",
+      callbackDescription: "Leave your contact details and I will call you back at a convenient time.",
+      callbackSubmit: "Call Me",
+      callbackSuccess: "Callback request sent! I will contact you soon.",
+    },
+    faq: {
+      label: "FAQ",
+      title: "Frequently Asked Questions",
+      items: [
+        {
+          question: "How to choose a neighborhood?",
+          answer: "Define your priorities: proximity to metro, schools, parks, and infrastructure. I will help analyze neighborhoods based on your budget and lifestyle, offering several options for comparison."
+        },
+        {
+          question: "What documents are needed?",
+          answer: "For buying you need a passport, for selling — an extract from EGRN, title documents, and certificates of no encumbrances. I will prepare the full document package and verify their legal purity."
+        },
+        {
+          question: "How to verify legal purity?",
+          answer: "I check through Rosreestr, courts, and FSSP: encumbrances, arrests, utility debts, title documents, and ownership history. This eliminates risks of the deal being contested after signing."
+        },
+        {
+          question: "How long does a deal take?",
+          answer: "A standard purchase-sale deal takes 2–4 weeks from signing the contract to registering ownership rights. Express support with a ready buyer reduces this to 3–5 days."
+        },
+        {
+          question: "What is express deal support?",
+          answer: "This is a service for clients who already have a buyer or seller. I handle document verification, contract preparation, deal support, and ownership transfer registration."
+        },
+        {
+          question: "Are there discounts on new builds?",
+          answer: "Yes, as a Setl Group partner I offer a 2% discount on the holding's properties. I also track promotions and special offers from other developers, allowing additional savings."
+        },
+      ],
+    },
+    exitIntent: {
+      title: "Wait!",
+      description: "Leave a request and get a free real estate consultation",
+      name: "Your Name",
+      phone: "Phone",
+      submit: "Get Consultation",
+      success: "Thank you! I will contact you shortly.",
+    },
+    floating: {
+      telegram: "Write on Telegram",
+      max: "Write on Max",
     },
     footer: {
       rights: "All rights reserved.",

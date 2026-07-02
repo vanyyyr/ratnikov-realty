@@ -23,7 +23,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { TrendingUp, Users, Handshake, Target, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, Users, Handshake, Target, DollarSign, Activity, ArrowDown } from "lucide-react";
 
 const PIE_COLORS = ["#3b82f6", "#eab308", "#22c55e", "#a855f7", "#ef4444", "#6b7280"];
 const RED = "#B91C1C";
@@ -59,15 +59,114 @@ interface DashboardData {
   leadsByMonth: { month: string; count: number }[];
 }
 
+interface FunnelData {
+  leadsByStatus: { status: string; count: number }[];
+  dealsByStage: { stage: string; count: number }[];
+  conversions: { from: string; to: string; rate: number }[];
+}
+
+function FunnelChart({
+  stages,
+  labels,
+}: {
+  stages: { key: string; count: number }[];
+  labels: Record<string, string>;
+}) {
+  const maxCount = Math.max(...stages.map((s) => s.count), 1);
+  const total = stages.reduce((sum, s) => sum + s.count, 0);
+
+  const gradientColors = [
+    "bg-red-700",
+    "bg-red-600",
+    "bg-red-500",
+    "bg-red-400",
+    "bg-red-300",
+    "bg-red-200",
+  ];
+
+  return (
+    <div className="space-y-2">
+      {/* Desktop: horizontal */}
+      <div className="hidden md:flex flex-col gap-2">
+        {stages.map((stage, idx) => {
+          const pct = total > 0 ? ((stage.count / total) * 100).toFixed(1) : "0";
+          const widthPct = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
+          return (
+            <div key={stage.key} className="flex items-center gap-3">
+              <div className="w-28 sm:w-32 text-xs font-medium text-gray-600 text-right flex-shrink-0">
+                {labels[stage.key] || stage.key}
+              </div>
+              <div className="flex-1 flex items-center gap-2">
+                <div className="flex-1 bg-gray-100 rounded-full h-8 relative overflow-hidden">
+                  <div
+                    className={`h-full ${gradientColors[idx % gradientColors.length]} rounded-full transition-all duration-500 flex items-center`}
+                    style={{ width: `${Math.max(widthPct, 8)}%` }}
+                  >
+                    <span className="text-white text-xs font-semibold px-2 whitespace-nowrap">
+                      {stage.count}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-500 w-12 text-right flex-shrink-0">{pct}%</span>
+              </div>
+              {idx < stages.length - 1 && (
+                <div className="flex flex-col items-center text-[10px] text-gray-400">
+                  <ArrowDown className="w-3 h-3" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Mobile: vertical */}
+      <div className="md:hidden space-y-3">
+        {stages.map((stage, idx) => {
+          const pct = total > 0 ? ((stage.count / total) * 100).toFixed(1) : "0";
+          const widthPct = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
+          return (
+            <div key={stage.key}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-700">
+                  {labels[stage.key] || stage.key}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-900">{stage.count}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5">{pct}%</Badge>
+                </div>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-6 relative overflow-hidden">
+                <div
+                  className={`h-full ${gradientColors[idx % gradientColors.length]} rounded-full transition-all duration-500`}
+                  style={{ width: `${Math.max(widthPct, 5)}%` }}
+                />
+              </div>
+              {idx < stages.length - 1 && (
+                <div className="flex justify-center my-1">
+                  <ArrowDown className="w-3 h-3 text-gray-300" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [funnelData, setFunnelData] = useState<FunnelData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/admin/dashboard")
-      .then((res) => res.json())
-      .then((json) => {
-        setData(json);
+    Promise.all([
+      fetch("/api/admin/dashboard").then((r) => r.json()),
+      fetch("/api/admin/funnel").then((r) => r.json()),
+    ])
+      .then(([dashboard, funnel]) => {
+        setData(dashboard);
+        setFunnelData(funnel);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -123,6 +222,7 @@ export default function AnalyticsPage() {
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
+        <Skeleton className="h-64 rounded-xl" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Skeleton className="h-80 rounded-xl" />
           <Skeleton className="h-80 rounded-xl" />
@@ -133,6 +233,54 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Lead Funnel */}
+      {funnelData && funnelData.leadsByStatus.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Users className="w-4 h-4 text-red-700" />
+              Воронка лидов
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FunnelChart
+              stages={funnelData.leadsByStatus.map((s) => ({ key: s.status, count: s.count }))}
+              labels={STATUS_LABELS}
+            />
+            {funnelData.conversions && funnelData.conversions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-500 font-medium mb-2">Конверсии между стадиями:</p>
+                <div className="flex flex-wrap gap-3">
+                  {funnelData.conversions.map((c, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {STATUS_LABELS[c.from] || c.from} → {STATUS_LABELS[c.to] || c.to}: {c.rate.toFixed(1)}%
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Deal Funnel */}
+      {funnelData && funnelData.dealsByStage.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Handshake className="w-4 h-4 text-green-600" />
+              Воронка сделок
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FunnelChart
+              stages={funnelData.dealsByStage.map((s) => ({ key: s.stage, count: s.count }))}
+              labels={STAGE_LABELS}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -293,7 +441,7 @@ export default function AnalyticsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <Handshake className="w-4 h-4 text-green-600" />
-              Воронка сделок
+              Воронка сделок (диаграмма)
             </CardTitle>
           </CardHeader>
           <CardContent>

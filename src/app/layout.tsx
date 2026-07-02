@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ratnikov.spb.ru"),
   title: "Илья Ратников — Риэлтор в Санкт-Петербурге | Комплексный подход к недвижимости",
   description:
     "Универсальный специалист по недвижимости в Санкт-Петербурге и ЛО. Покупка, продажа, сопровождение сделок, консультации по новостройкам. Партнёр Setl Group.",
@@ -33,6 +34,45 @@ export const metadata: Metadata = {
     title: "Илья Ратников — Риэлтор в Санкт-Петербурге",
     description: "Комплексный подход к недвижимости. Покупка, продажа, сопровождение сделок.",
     type: "website",
+    url: "https://ratnikov.spb.ru",
+    images: [
+      {
+        url: "/hero-photo.jpg",
+        width: 896,
+        height: 1195,
+        alt: "Илья Ратников — Риэлтор в Санкт-Петербурге",
+      },
+    ],
+    locale: "ru_RU",
+    siteName: "Ратников Недвижимость",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Илья Ратников — Риэлтор в Санкт-Петербурге",
+    description: "Комплексный подход к недвижимости. Покупка, продажа, сопровождение сделок.",
+    images: ["/hero-photo.jpg"],
+  },
+  icons: {
+    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏠%3C/text%3E%3C/svg%3E",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  name: "Илья Ратников",
+  description: "Риэлтор-эксперт в Санкт-Петербурге. Комплексное сопровождение сделок с недвижимостью.",
+  url: "https://ratnikov.spb.ru",
+  telephone: "+79892467798",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "ул. Комсомола, 41",
+    addressLocality: "Санкт-Петербург",
+    addressCountry: "RU",
+  },
+  areaServed: {
+    "@type": "City",
+    name: "Санкт-Петербург",
   },
 };
 
@@ -43,6 +83,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" suppressHydrationWarning>
+      <head>
+        <link rel="preload" href="/hero-photo.jpg" as="image" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >

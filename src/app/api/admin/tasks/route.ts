@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { logActivity } from "@/lib/notifications";
 
 export async function GET() {
   const tasks = await db.task.findMany({
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
       clientName: clientName || null,
     },
   });
+  await logActivity("task_created", `Новая задача: ${title}`);
   return NextResponse.json(task, { status: 201 });
 }
 
@@ -37,7 +39,12 @@ export async function PUT(req: NextRequest) {
   if (data.clientName !== undefined) update.clientName = data.clientName || null;
   if (data.status !== undefined) {
     update.status = data.status;
-    if (data.status === "completed") update.completedAt = new Date();
+    if (data.status === "completed") {
+      update.completedAt = new Date();
+      await logActivity("task_completed", `Задача выполнена: ${id}`);
+    } else {
+      await logActivity("task_updated", `Задача обновлена: ${id}, статус: ${data.status}`);
+    }
   }
   const task = await db.task.update({ where: { id }, data: update });
   return NextResponse.json(task);

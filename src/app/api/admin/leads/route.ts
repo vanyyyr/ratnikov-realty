@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const search = searchParams.get("search");
+  const tagsParam = searchParams.get("tags");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
 
@@ -15,6 +16,27 @@ export async function GET(req: NextRequest) {
       { name: { contains: search } },
       { phone: { contains: search } },
     ];
+  }
+  if (tagsParam) {
+    const tags = tagsParam.split(",").map((t) => t.trim()).filter(Boolean);
+    if (tags.length > 0) {
+      // SQLite doesn't support JSON array contains, so we match tags as substrings
+      // Each tag in the JSON array is wrapped in quotes
+      const tagConditions = tags.map((tag) => ({
+        tags: { contains: `"${tag}"` },
+      }));
+      // If there are multiple tags, use OR (match any)
+      if (tagConditions.length === 1) {
+        where.tags = tagConditions[0].tags;
+      } else {
+        // Combine with existing OR or create new one
+        const existingOr = where.OR as Array<Record<string, unknown>> | undefined;
+        where.OR = [
+          ...(existingOr || []),
+          ...tagConditions,
+        ];
+      }
+    }
   }
 
   const [leads, total] = await Promise.all([
@@ -31,10 +53,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { id, status, notes } = await req.json();
+  const { id, status, notes, tags } = await req.json();
+  const updateData: Record<string, unknown> = {};
+  if (status) updateData.status = status;
+  if (notes !== undefined) updateData.notes = notes;
+  if (tags !== undefined) {
+    updateData.tags = typeof tags === "string" ? tags : JSON.stringify(tags);
+  }
   const lead = await db.lead.update({
     where: { id },
-    data: { ...(status && { status }), ...(notes !== undefined && { notes }) },
+    data: updateData,
   });
   return NextResponse.json(lead);
 }
