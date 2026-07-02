@@ -8,7 +8,6 @@ export const translations = {
       reviews: "Отзывы",
       contact: "Контакты",
       cian: "Объекты на ЦИАН",
-      admin: "CRM",
     },
     hero: {
       greeting: "Недвижимость Санкт-Петербурга и ЛО",
@@ -132,7 +131,6 @@ export const translations = {
       reviews: "Reviews",
       contact: "Contact",
       cian: "Properties on Cian",
-      admin: "CRM",
     },
     hero: {
       greeting: "Real Estate in St. Petersburg & LLO",

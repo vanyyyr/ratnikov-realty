@@ -120,4 +120,23 @@ Work Log:
 Stage Summary:
 - Production-ready landing page + CRM admin panel
 - All core interactions verified through agent-browser testing
-- Clean lint, no build errors
+- Clean lint, no build errors---
+Task ID: 1
+Agent: Main Agent
+Task: Fix button contrast bug, remove CRM icon, audit contrast issues, suggest improvements
+
+Work Log:
+- Read full page.tsx (863 lines) and identified the "Смотреть объекты" button bug
+- Root cause: `variant="outline"` from shadcn/ui Button applies `bg-background` (white ~oklch(0.98 0 0)), making white text invisible on white background before hero dark bg renders
+- Fix: Replaced `<Button variant="outline">` wrapper with a plain `<a>` tag using `bg-transparent` class
+- Verified fix via agent-browser: computed style shows `rgba(0, 0, 0, 0)` background with white text
+- Audited entire page for contrast issues - all other sections have proper contrast
+- Confirmed no CRM icon exists in navbar (both desktop and mobile views)
+- Removed unused `nav.admin: "CRM"` key from i18n translations (both RU and EN)
+- Full page browser verification: no console errors, all interactive elements working
+
+Stage Summary:
+- Button bug fixed: "Смотреть объекты" now has transparent bg on dark hero
+- No CRM icon found in navbar (already clean)
+- Cleaned up i18n translations
+- All contrast issues resolved

@@ -369,20 +369,15 @@ export default function Home() {
                       {hero.cta}
                       <ArrowRight size={17} />
                     </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg"
+                    <a
+                      href="https://cian.ru/cat.php?deal_type=sale&engine_version=extended"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
                     >
-                      <a
-                        href="https://cian.ru/cat.php?deal_type=sale&engine_version=extended"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {hero.cian}
-                        <ExternalLink size={15} />
-                      </a>
-                    </Button>
+                      {hero.cian}
+                      <ExternalLink size={15} />
+                    </a>
                   </div>
                 </FadeIn>
               </div>

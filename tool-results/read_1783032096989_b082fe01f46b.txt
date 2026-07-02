@@ -1,0 +1,863 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
+     4→import Image from "next/image";
+     5→import { useI18n } from "@/lib/i18n-context";
+     6→import { Button } from "@/components/ui/button";
+     7→import { Input } from "@/components/ui/input";
+     8→import { Textarea } from "@/components/ui/textarea";
+     9→import { Label } from "@/components/ui/label";
+    10→import { Card, CardContent } from "@/components/ui/card";
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from "@/components/ui/select";
+    18→import { toast } from "sonner";
+    19→import { Badge } from "@/components/ui/badge";
+    20→import {
+    21→  Sheet,
+    22→  SheetContent,
+    23→  SheetTrigger,
+    24→  SheetTitle,
+    25→} from "@/components/ui/sheet";
+    26→import {
+    27→  Menu,
+    28→  BarChart3,
+    29→  ShieldCheck,
+    30→  Megaphone,
+    31→  Handshake,
+    32→  MessageCircle,
+    33→  ChevronDown,
+    34→  Phone,
+    35→  MapPin,
+    36→  Send,
+    37→  ArrowRight,
+    38→  ExternalLink,
+    39→  Quote,
+    40→  Star,
+    41→  Globe,
+    42→} from "lucide-react";
+    43→
+    44→/* ──────────────────────────── helpers ──────────────────────────── */
+    45→
+    46→function FadeIn({
+    47→  children,
+    48→  className = "",
+    49→  delay = 0,
+    50→}: {
+    51→  children: ReactNode;
+    52→  className?: string;
+    53→  delay?: number;
+    54→}) {
+    55→  const ref = useRef<HTMLDivElement>(null);
+    56→  const [visible, setVisible] = useState(false);
+    57→
+    58→  useEffect(() => {
+    59→    const el = ref.current;
+    60→    if (!el) return;
+    61→    const obs = new IntersectionObserver(
+    62→      ([e]) => {
+    63→        if (e.isIntersecting) {
+    64→          setVisible(true);
+    65→          obs.disconnect();
+    66→        }
+    67→      },
+    68→      { threshold: 0.08 },
+    69→    );
+    70→    obs.observe(el);
+    71→    return () => obs.disconnect();
+    72→  }, []);
+    73→
+    74→  return (
+    75→    <div
+    76→      ref={ref}
+    77→      className={className}
+    78→      style={{
+    79→        opacity: visible ? 1 : 0,
+    80→        transform: visible ? "translateY(0)" : "translateY(24px)",
+    81→        transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
+    82→      }}
+    83→    >
+    84→      {children}
+    85→    </div>
+    86→  );
+    87→}
+    88→
+    89→function SectionLabel({ children }: { children: ReactNode }) {
+    90→  return (
+    91→    <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+    92→      {children}
+    93→    </span>
+    94→  );
+    95→}
+    96→
+    97→function SectionHeading({
+    98→  children,
+    99→  className = "",
+   100→}: {
+   101→  children: ReactNode;
+   102→  className?: string;
+   103→}) {
+   104→  return (
+   105→    <h2
+   106→      className={`text-3xl sm:text-4xl font-bold text-foreground tracking-tight ${className}`}
+   107→    >
+   108→      {children}
+   109→    </h2>
+   110→  );
+   111→}
+   112→
+   113→/* ──────────────────────────── page ──────────────────────────── */
+   114→
+   115→export default function Home() {
+   116→  const { locale, setLocale, t } = useI18n();
+   117→
+   118→  const nav = t("nav");
+   119→  const hero = t("hero");
+   120→  const about = t("about");
+   121→  const advantages = t("advantages");
+   122→  const services = t("services");
+   123→  const stats = t("stats");
+   124→  const reviews = t("reviews");
+   125→  const contact = t("contact");
+   126→  const footer = t("footer");
+   127→
+   128→  /* state */
+   129→  const [scrolled, setScrolled] = useState(false);
+   130→  const [mobileOpen, setMobileOpen] = useState(false);
+   131→  const [formData, setFormData] = useState({
+   132→    name: "",
+   133→    phone: "",
+   134→    serviceType: "",
+   135→    comment: "",
+   136→  });
+   137→  const [loading, setLoading] = useState(false);
+   138→
+   139→  /* scroll listener */
+   140→  useEffect(() => {
+   141→    const onScroll = () => setScrolled(window.scrollY > 60);
+   142→    window.addEventListener("scroll", onScroll, { passive: true });
+   143→    return () => window.removeEventListener("scroll", onScroll);
+   144→  }, []);
+   145→
+   146→  const scrollTo = (id: string) => {
+   147→    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+   148→    setMobileOpen(false);
+   149→  };
+   150→
+   151→  /* form */
+   152→  const handleSubmit = async (e: FormEvent) => {
+   153→    e.preventDefault();
+   154→    if (!formData.name.trim() || !formData.phone.trim()) {
+   155→      toast.error(contact.required);
+   156→      return;
+   157→    }
+   158→    setLoading(true);
+   159→    try {
+   160→      const res = await fetch("/api/leads", {
+   161→        method: "POST",
+   162→        headers: { "Content-Type": "application/json" },
+   163→        body: JSON.stringify({
+   164→          name: formData.name,
+   165→          phone: formData.phone,
+   166→          serviceType: formData.serviceType || undefined,
+   167→          comment: formData.comment || undefined,
+   168→        }),
+   169→      });
+   170→      if (res.ok) {
+   171→        toast.success(contact.success);
+   172→        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
+   173→      } else {
+   174→        toast.error(contact.error);
+   175→      }
+   176→    } catch {
+   177→      toast.error(contact.error);
+   178→    } finally {
+   179→      setLoading(false);
+   180→    }
+   181→  };
+   182→
+   183→  /* advantage icons */
+   184→  const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
+   185→
+   186→  /* nav links */
+   187→  const navLinks = [
+   188→    { label: nav.about, id: "about" },
+   189→    { label: nav.services, id: "services" },
+   190→    { label: nav.reviews, id: "reviews" },
+   191→    { label: nav.contact, id: "contact" },
+   192→  ];
+   193→
+   194→  return (
+   195→    <div className="min-h-screen flex flex-col bg-white">
+   196→      {/* ═══════════════════ NAVBAR ═══════════════════ */}
+   197→      <header
+   198→        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+   199→          scrolled
+   200→            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+   201→            : "bg-transparent"
+   202→        }`}
+   203→      >
+   204→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+   205→          {/* Logo */}
+   206→          <button
+   207→            onClick={() => scrollTo("hero")}
+   208→            className="flex items-center select-none"
+   209→          >
+   210→            <span
+   211→              className={`text-[14px] font-semibold tracking-tight transition-colors ${
+   212→                scrolled ? "text-foreground" : "text-white"
+   213→              }`}
+   214→            >
+   215→              {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   216→            </span>
+   217→          </button>
+   218→
+   219→          {/* Desktop nav links */}
+   220→          <nav className="hidden lg:flex items-center gap-8">
+   221→            {navLinks.map((l) => (
+   222→              <button
+   223→                key={l.id}
+   224→                onClick={() => scrollTo(l.id)}
+   225→                className={`text-[13px] font-medium transition-colors ${
+   226→                  scrolled
+   227→                    ? "text-foreground/70 hover:text-red-700"
+   228→                    : "text-white/70 hover:text-white"
+   229→                }`}
+   230→              >
+   231→                {l.label}
+   232→              </button>
+   233→            ))}
+   234→          </nav>
+   235→
+   236→          {/* Desktop right side */}
+   237→          <div className="hidden lg:flex items-center gap-3">
+   238→            {/* Lang toggle */}
+   239→            <div className="flex items-center bg-black/5 rounded-md p-[3px]">
+   240→              {(["ru", "en"] as const).map((lng) => (
+   241→                <button
+   242→                  key={lng}
+   243→                  onClick={() => setLocale(lng)}
+   244→                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-[5px] transition-all duration-200 ${
+   245→                    locale === lng
+   246→                      ? "bg-red-700 text-white shadow-sm"
+   247→                      : scrolled
+   248→                        ? "text-foreground/50 hover:text-foreground"
+   249→                        : "text-white/50 hover:text-white"
+   250→                  }`}
+   251→                >
+   252→                  {lng}
+   253→                </button>
+   254→              ))}
+   255→            </div>
+   256→
+   257→            <Button
+   258→              onClick={() => scrollTo("contact")}
+   259→              className="bg-red-700 hover:bg-red-800 text-white h-9 px-5 text-[13px] font-medium rounded-md"
+   260→              size="default"
+   261→            >
+   262→              {hero.cta}
+   263→            </Button>
+   264→          </div>
+   265→
+   266→          {/* Mobile hamburger */}
+   267→          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+   268→            <SheetTrigger asChild>
+   269→              <button
+   270→                className={`lg:hidden transition-colors ${
+   271→                  scrolled ? "text-foreground" : "text-white"
+   272→                }`}
+   273→                aria-label="Menu"
+   274→              >
+   275→                <Menu size={24} />
+   276→              </button>
+   277→            </SheetTrigger>
+   278→            <SheetContent side="right" className="w-[300px] pt-10">
+   279→              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
+   280→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   281→              </SheetTitle>
+   282→
+   283→              <nav className="flex flex-col gap-1">
+   284→                {navLinks.map((l) => (
+   285→                  <button
+   286→                    key={l.id}
+   287→                    onClick={() => scrollTo(l.id)}
+   288→                    className="text-left text-[15px] font-medium text-foreground/80 hover:text-red-700 transition-colors py-3 border-b border-border/50"
+   289→                  >
+   290→                    {l.label}
+   291→                  </button>
+   292→                ))}
+   293→              </nav>
+   294→
+   295→              <div className="flex items-center bg-gray-100 rounded-md p-[3px] w-fit mt-8">
+   296→                {(["ru", "en"] as const).map((lng) => (
+   297→                  <button
+   298→                    key={lng}
+   299→                    onClick={() => setLocale(lng)}
+   300→                    className={`px-3 py-1.5 text-[12px] font-bold uppercase rounded-[5px] transition-all ${
+   301→                      locale === lng
+   302→                        ? "bg-red-700 text-white"
+   303→                        : "text-foreground/50"
+   304→                    }`}
+   305→                  >
+   306→                    {lng}
+   307→                  </button>
+   308→                ))}
+   309→              </div>
+   310→
+   311→              <Button
+   312→                onClick={() => scrollTo("contact")}
+   313→                className="bg-red-700 hover:bg-red-800 text-white w-full h-11 mt-6 text-[14px] font-medium"
+   314→              >
+   315→                {hero.cta}
+   316→              </Button>
+   317→            </SheetContent>
+   318→          </Sheet>
+   319→        </div>
+   320→      </header>
+   321→
+   322→      <main className="flex-1">
+   323→        {/* ═══════════════════ HERO ═══════════════════ */}
+   324→        <section
+   325→          id="hero"
+   326→          className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
+   327→        >
+   328→          {/* background layers */}
+   329→          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" />
+   330→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" />
+   331→
+   332→          {/* thin red accent line at top */}
+   333→          <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
+   334→
+   335→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
+   336→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   337→              {/* Text content */}
+   338→              <div className="text-center lg:text-left order-2 lg:order-1">
+   339→                <FadeIn>
+   340→                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
+   341→                    {hero.greeting}
+   342→                  </p>
+   343→                </FadeIn>
+   344→
+   345→                <FadeIn delay={0.1}>
+   346→                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+   347→                    {hero.name}
+   348→                  </h1>
+   349→                </FadeIn>
+   350→
+   351→                <FadeIn delay={0.2}>
+   352→                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+   353→                    {hero.title}
+   354→                  </p>
+   355→                </FadeIn>
+   356→
+   357→                <FadeIn delay={0.3}>
+   358→                  <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+   359→                    {hero.subtitle}
+   360→                  </p>
+   361→                </FadeIn>
+   362→
+   363→                <FadeIn delay={0.4}>
+   364→                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+   365→                    <Button
+   366→                      onClick={() => scrollTo("contact")}
+   367→                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow"
+   368→                    >
+   369→                      {hero.cta}
+   370→                      <ArrowRight size={17} />
+   371→                    </Button>
+   372→                    <Button
+   373→                      asChild
+   374→                      variant="outline"
+   375→                      className="border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg"
+   376→                    >
+   377→                      <a
+   378→                        href="https://cian.ru/cat.php?deal_type=sale&engine_version=extended"
+   379→                        target="_blank"
+   380→                        rel="noopener noreferrer"
+   381→                      >
+   382→                        {hero.cian}
+   383→                        <ExternalLink size={15} />
+   384→                      </a>
+   385→                    </Button>
+   386→                  </div>
+   387→                </FadeIn>
+   388→              </div>
+   389→
+   390→              {/* Photo */}
+   391→              <FadeIn delay={0.3} className="order-1 lg:order-2 flex justify-center lg:justify-end">
+   392→                <div className="relative">
+   393→                  <div className="absolute -left-2 top-6 bottom-6 w-[3px] bg-gradient-to-b from-red-700 via-red-600 to-red-800 rounded-full hidden sm:block" />
+   394→                  <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10">
+   395→                    <Image
+   396→                      src="/hero-photo.jpg"
+   397→                      alt={hero.name}
+   398→                      width={380}
+   399→                      height={507}
+   400→                      className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
+   401→                      priority
+   402→                    />
+   403→                  </div>
+   404→                  {/* Decorative corner */}
+   405→                  <div className="absolute -bottom-3 -right-3 w-20 h-20 border-2 border-red-700/20 rounded-2xl -z-10 hidden sm:block" />
+   406→                </div>
+   407→              </FadeIn>
+   408→            </div>
+   409→          </div>
+   410→
+   411→          {/* Scroll indicator */}
+   412→          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+   413→            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
+   414→              {hero.scroll}
+   415→            </span>
+   416→            <ChevronDown className="text-white/50 animate-bounce" size={18} />
+   417→          </div>
+   418→        </section>
+   419→
+   420→        {/* ═══════════════════ ABOUT ═══════════════════ */}
+   421→        <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
+   422→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   423→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   424→              {/* Photo */}
+   425→              <FadeIn>
+   426→                <div className="relative max-w-md mx-auto lg:mx-0">
+   427→                  <div className="relative rounded-2xl overflow-hidden shadow-xl">
+   428→                    <Image
+   429→                      src="/hero-photo.jpg"
+   430→                      alt={hero.name}
+   431→                      width={600}
+   432→                      height={800}
+   433→                      className="w-full h-auto object-cover"
+   434→                    />
+   435→                  </div>
+   436→                  {/* Decorative shapes */}
+   437→                  <div className="absolute -bottom-4 -right-4 w-28 h-28 bg-red-700/5 rounded-2xl -z-10" />
+   438→                  <div className="absolute -top-4 -left-4 w-16 h-16 border-2 border-red-700/15 rounded-xl -z-10" />
+   439→                </div>
+   440→              </FadeIn>
+   441→
+   442→              {/* Text */}
+   443→              <div>
+   444→                <FadeIn>
+   445→                  <SectionLabel>{about.label}</SectionLabel>
+   446→                  <SectionHeading className="mb-6">{about.title}</SectionHeading>
+   447→                </FadeIn>
+   448→
+   449→                <FadeIn delay={0.1}>
+   450→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+   451→                    {about.description}
+   452→                  </p>
+   453→                </FadeIn>
+   454→
+   455→                {/* Mission box */}
+   456→                <FadeIn delay={0.2}>
+   457→                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
+   458→                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
+   459→                      {about.mission}
+   460→                    </h3>
+   461→                    <p className="text-muted-foreground text-sm leading-relaxed">
+   462→                      {about.missionText}
+   463→                    </p>
+   464→                  </div>
+   465→                </FadeIn>
+   466→
+   467→                <FadeIn delay={0.3}>
+   468→                  <Badge className="bg-red-700 text-white hover:bg-red-800 text-xs px-4 py-1.5 rounded-md font-medium">
+   469→                    {about.partner}
+   470→                  </Badge>
+   471→                </FadeIn>
+   472→              </div>
+   473→            </div>
+   474→          </div>
+   475→        </section>
+   476→
+   477→        {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
+   478→        <section className="py-20 sm:py-28 bg-gray-50">
+   479→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   480→            <FadeIn className="text-center mb-14 sm:mb-16">
+   481→              <SectionLabel>{advantages.label}</SectionLabel>
+   482→              <SectionHeading>{advantages.title}</SectionHeading>
+   483→            </FadeIn>
+   484→
+   485→            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+   486→              {advantages.items.map((item, i) => {
+   487→                const Icon = advIcons[i];
+   488→                return (
+   489→                  <FadeIn key={i} delay={i * 0.1}>
+   490→                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   491→                      <CardContent className="p-6 sm:p-8">
+   492→                        <div className="flex items-start gap-4">
+   493→                          <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
+   494→                            <Icon
+   495→                              size={21}
+   496→                              className="text-red-700 group-hover:text-white transition-colors duration-300"
+   497→                            />
+   498→                          </div>
+   499→                          <div className="min-w-0">
+   500→                            <h3 className="text-[15px] sm:text-base font-semibold text-foreground mb-2 leading-snug">
+   501→                              {item.title}
+   502→                            </h3>
+   503→                            <p className="text-muted-foreground text-sm leading-relaxed">
+   504→                              {item.text}
+   505→                            </p>
+   506→                          </div>
+   507→                        </div>
+   508→                      </CardContent>
+   509→                    </Card>
+   510→                  </FadeIn>
+   511→                );
+   512→              })}
+   513→            </div>
+   514→          </div>
+   515→        </section>
+   516→
+   517→        {/* ═══════════════════ SERVICES ═══════════════════ */}
+   518→        <section id="services" className="py-20 sm:py-28 bg-white">
+   519→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   520→            <FadeIn className="text-center mb-14 sm:mb-16">
+   521→              <SectionLabel>{services.label}</SectionLabel>
+   522→              <SectionHeading className="mb-4">{services.title}</SectionHeading>
+   523→              <p className="text-muted-foreground text-[15px] sm:text-base max-w-2xl mx-auto leading-relaxed">
+   524→                {services.subtitle}
+   525→              </p>
+   526→            </FadeIn>
+   527→
+   528→            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+   529→              {services.items.map((item, i) => (
+   530→                <FadeIn key={i} delay={i * 0.1}>
+   531→                  <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   532→                    <CardContent className="p-6 sm:p-8 flex flex-col h-full">
+   533→                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
+   534→                        {String(i + 1).padStart(2, "0")}
+   535→                      </span>
+   536→                      <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
+   537→                        {item.title}
+   538→                      </h3>
+   539→                      <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+   540→                        {item.text}
+   541→                      </p>
+   542→                    </CardContent>
+   543→                  </Card>
+   544→                </FadeIn>
+   545→              ))}
+   546→            </div>
+   547→          </div>
+   548→        </section>
+   549→
+   550→        {/* ═══════════════════ STATS ═══════════════════ */}
+   551→        <section className="py-20 sm:py-24 bg-[#0A0A0A] relative overflow-hidden">
+   552→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(185,28,28,0.06),transparent)]" />
+   553→
+   554→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   555→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+   556→              {stats.items.map((item, i) => (
+   557→                <FadeIn key={i} delay={i * 0.1} className="text-center">
+   558→                  <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
+   559→                    {item.value}
+   560→                  </div>
+   561→                  <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+   562→                    {item.label}
+   563→                  </div>
+   564→                </FadeIn>
+   565→              ))}
+   566→            </div>
+   567→          </div>
+   568→        </section>
+   569→
+   570→        {/* ═══════════════════ REVIEWS ═══════════════════ */}
+   571→        <section id="reviews" className="py-20 sm:py-28 bg-white">
+   572→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   573→            <FadeIn className="text-center mb-14 sm:mb-16">
+   574→              <SectionLabel>{reviews.label}</SectionLabel>
+   575→              <SectionHeading>{reviews.title}</SectionHeading>
+   576→            </FadeIn>
+   577→
+   578→            <FadeIn>
+   579→              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+   580→                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+   581→                  <Quote size={28} className="text-red-700/40" />
+   582→                </div>
+   583→                <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+   584→                  {reviews.placeholder}
+   585→                </p>
+   586→                <div className="flex items-center justify-center gap-1.5">
+   587→                  {[...Array(5)].map((_, i) => (
+   588→                    <Star
+   589→                      key={i}
+   590→                      size={18}
+   591→                      className="text-gray-200 fill-gray-200"
+   592→                    />
+   593→                  ))}
+   594→                </div>
+   595→              </div>
+   596→            </FadeIn>
+   597→          </div>
+   598→        </section>
+   599→
+   600→        {/* ═══════════════════ CONTACT ═══════════════════ */}
+   601→        <section id="contact" className="py-20 sm:py-28 bg-white">
+   602→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   603→            <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
+   604→              {/* Left: info */}
+   605→              <div className="lg:col-span-2">
+   606→                <FadeIn>
+   607→                  <SectionLabel>{contact.label}</SectionLabel>
+   608→                  <SectionHeading className="mb-4">{contact.title}</SectionHeading>
+   609→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-10">
+   610→                    {contact.subtitle}
+   611→                  </p>
+   612→                </FadeIn>
+   613→
+   614→                <FadeIn delay={0.15}>
+   615→                  <div className="flex flex-col gap-3">
+   616→                    <Button
+   617→                      asChild
+   618→                      variant="outline"
+   619→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   620→                    >
+   621→                      <a
+   622→                        href="https://t.me/ilyaratnikov"
+   623→                        target="_blank"
+   624→                        rel="noopener noreferrer"
+   625→                      >
+   626→                        <MessageCircle size={19} className="text-red-700" />
+   627→                        Telegram
+   628→                      </a>
+   629→                    </Button>
+   630→                    <Button
+   631→                      asChild
+   632→                      variant="outline"
+   633→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   634→                    >
+   635→                      <a href="https://max.ru" target="_blank" rel="noopener noreferrer">
+   636→                        <MessageCircle size={19} className="text-red-700" />
+   637→                        Макс
+   638→                      </a>
+   639→                    </Button>
+   640→                  </div>
+   641→                </FadeIn>
+   642→
+   643→                {/* Contact info below messenger buttons */}
+   644→                <FadeIn delay={0.25}>
+   645→                  <div className="mt-10 space-y-4">
+   646→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   647→                      <Phone size={16} className="text-red-700/70 flex-shrink-0" />
+   648→                      <a href="tel:+79892467798" className="hover:text-red-700 transition-colors">+7 (989) 246-77-98</a>
+   649→                    </div>
+   650→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   651→                      <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
+   652→                      <span>{footer.address}</span>
+   653→                    </div>
+   654→                  </div>
+   655→                </FadeIn>
+   656→              </div>
+   657→
+   658→              {/* Right: form */}
+   659→              <FadeIn delay={0.1} className="lg:col-span-3">
+   660→                <form
+   661→                  onSubmit={handleSubmit}
+   662→                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
+   663→                >
+   664→                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
+   665→                    <div className="space-y-2">
+   666→                      <Label htmlFor="name" className="text-xs font-medium">
+   667→                        {contact.name} *
+   668→                      </Label>
+   669→                      <Input
+   670→                        id="name"
+   671→                        value={formData.name}
+   672→                        onChange={(e) =>
+   673→                          setFormData((p) => ({ ...p, name: e.target.value }))
+   674→                        }
+   675→                        placeholder={contact.name}
+   676→                        required
+   677→                        className="h-11"
+   678→                      />
+   679→                    </div>
+   680→                    <div className="space-y-2">
+   681→                      <Label htmlFor="phone" className="text-xs font-medium">
+   682→                        {contact.phone} *
+   683→                      </Label>
+   684→                      <Input
+   685→                        id="phone"
+   686→                        type="tel"
+   687→                        value={formData.phone}
+   688→                        onChange={(e) =>
+   689→                          setFormData((p) => ({ ...p, phone: e.target.value }))
+   690→                        }
+   691→                        placeholder={contact.phone}
+   692→                        required
+   693→                        className="h-11"
+   694→                      />
+   695→                    </div>
+   696→                  </div>
+   697→
+   698→                  <div className="space-y-2 mb-5">
+   699→                    <Label className="text-xs font-medium">
+   700→                      {contact.serviceType}
+   701→                    </Label>
+   702→                    <Select
+   703→                      value={formData.serviceType}
+   704→                      onValueChange={(v) =>
+   705→                        setFormData((p) => ({ ...p, serviceType: v }))
+   706→                      }
+   707→                    >
+   708→                      <SelectTrigger className="w-full h-11">
+   709→                        <SelectValue placeholder={contact.serviceType} />
+   710→                      </SelectTrigger>
+   711→                      <SelectContent>
+   712→                        {contact.serviceTypes.map((type) => (
+   713→                          <SelectItem key={type} value={type}>
+   714→                            {type}
+   715→                          </SelectItem>
+   716→                        ))}
+   717→                      </SelectContent>
+   718→                    </Select>
+   719→                  </div>
+   720→
+   721→                  <div className="space-y-2 mb-6">
+   722→                    <Label htmlFor="comment" className="text-xs font-medium">
+   723→                      {contact.comment}
+   724→                    </Label>
+   725→                    <Textarea
+   726→                      id="comment"
+   727→                      value={formData.comment}
+   728→                      onChange={(e) =>
+   729→                        setFormData((p) => ({ ...p, comment: e.target.value }))
+   730→                      }
+   731→                      placeholder={contact.commentPlaceholder}
+   732→                      rows={4}
+   733→                      className="resize-none"
+   734→                    />
+   735→                  </div>
+   736→
+   737→                  <Button
+   738→                    type="submit"
+   739→                    disabled={loading}
+   740→                    className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
+   741→                  >
+   742→                    {loading ? (
+   743→                      <span className="flex items-center gap-2">
+   744→                        <svg
+   745→                          className="animate-spin h-4 w-4"
+   746→                          viewBox="0 0 24 24"
+   747→                          fill="none"
+   748→                        >
+   749→                          <circle
+   750→                            className="opacity-25"
+   751→                            cx="12"
+   752→                            cy="12"
+   753→                            r="10"
+   754→                            stroke="currentColor"
+   755→                            strokeWidth="4"
+   756→                          />
+   757→                          <path
+   758→                            className="opacity-75"
+   759→                            fill="currentColor"
+   760→                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+   761→                          />
+   762→                        </svg>
+   763→                        {contact.submit}
+   764→                      </span>
+   765→                    ) : (
+   766→                      <span className="flex items-center gap-2">
+   767→                        <Send size={16} />
+   768→                        {contact.submit}
+   769→                      </span>
+   770→                    )}
+   771→                  </Button>
+   772→                </form>
+   773→              </FadeIn>
+   774→            </div>
+   775→          </div>
+   776→        </section>
+   777→      </main>
+   778→
+   779→      {/* ═══════════════════ FOOTER ═══════════════════ */}
+   780→      <footer className="bg-[#0A0A0A] text-white mt-auto">
+   781→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+   782→          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
+   783→            {/* Contacts */}
+   784→            <div>
+   785→              <p className="text-sm font-semibold tracking-tight mb-6">
+   786→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   787→              </p>
+   788→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   789→                {footer.contacts}
+   790→              </h3>
+   791→              <div className="space-y-3">
+   792→                <a
+   793→                  href="tel:+79892467798"
+   794→                  className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
+   795→                >
+   796→                  <Phone size={15} className="text-red-500/80 flex-shrink-0" />
+   797→                  +7 (989) 246-77-98
+   798→                </a>
+   799→                <div className="flex items-center gap-3 text-white/60 text-sm">
+   800→                  <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
+   801→                  {footer.address}
+   802→                </div>
+   803→              </div>
+   804→            </div>
+   805→
+   806→            {/* Quick links */}
+   807→            <div>
+   808→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   809→                {footer.quickLinks}
+   810→              </h3>
+   811→              <nav className="flex flex-col gap-3">
+   812→                {navLinks.map((l) => (
+   813→                  <button
+   814→                    key={l.id}
+   815→                    onClick={() => scrollTo(l.id)}
+   816→                    className="text-left text-white/50 hover:text-white transition-colors text-sm"
+   817→                  >
+   818→                    {l.label}
+   819→                  </button>
+   820→                ))}
+   821→              </nav>
+   822→            </div>
+   823→
+   824→            {/* Social */}
+   825→            <div>
+   826→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   827→                {footer.followMe}
+   828→              </h3>
+   829→              <div className="flex flex-col gap-3">
+   830→                <a
+   831→                  href="https://t.me/ilyaratnikov"
+   832→                  target="_blank"
+   833→                  rel="noopener noreferrer"
+   834→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+   835→                >
+   836→                  <MessageCircle size={15} className="flex-shrink-0" />
+   837→                  {footer.telegram}
+   838→                </a>
+   839→                <a
+   840→                  href="#"
+   841→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+   842→                >
+   843→                  <Globe size={15} className="flex-shrink-0" />
+   844→                  {footer.vk}
+   845→                </a>
+   846→              </div>
+   847→            </div>
+   848→          </div>
+   849→        </div>
+   850→
+   851→        {/* Bottom bar */}
+   852→        <div className="border-t border-white/[0.06]">
+   853→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+   854→            <p className="text-white/40 text-xs">
+   855→              &copy; 2025 {hero.name}. {footer.rights}
+   856→            </p>
+   857→            <p className="text-white/40 text-xs">{footer.madeIn}</p>
+   858→          </div>
+   859→        </div>
+   860→      </footer>
+   861→    </div>
+   862→  );
+   863→}
