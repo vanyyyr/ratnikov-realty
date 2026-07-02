@@ -205,21 +205,14 @@ export default function Home() {
           {/* Logo */}
           <button
             onClick={() => scrollTo("hero")}
-            className="flex flex-col leading-none select-none"
+            className="flex items-center select-none"
           >
             <span
-              className={`text-[17px] font-bold tracking-tight transition-colors ${
+              className={`text-[14px] font-semibold tracking-tight transition-colors ${
                 scrolled ? "text-foreground" : "text-white"
               }`}
             >
-              РАТНИКОВ
-            </span>
-            <span
-              className={`text-[9px] uppercase tracking-[0.18em] mt-0.5 transition-colors ${
-                scrolled ? "text-muted-foreground" : "text-white/50"
-              }`}
-            >
-              недвижимость
+              {locale === "ru" ? "Личная визитка" : "Personal Card"}
             </span>
           </button>
 
@@ -283,11 +276,8 @@ export default function Home() {
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] pt-10">
-              <SheetTitle className="text-base font-bold tracking-tight mb-8 flex flex-col leading-none">
-                <span>РАТНИКОВ</span>
-                <span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground mt-1 font-medium">
-                  недвижимость
-                </span>
+              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
+                {locale === "ru" ? "Личная визитка" : "Personal Card"}
               </SheetTitle>
 
               <nav className="flex flex-col gap-1">
@@ -419,16 +409,16 @@ export default function Home() {
           </div>
 
           {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-            <span className="text-white/30 text-[10px] uppercase tracking-[0.25em]">
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
               {hero.scroll}
             </span>
-            <ChevronDown className="text-white/30 animate-bounce" size={18} />
+            <ChevronDown className="text-white/50 animate-bounce" size={18} />
           </div>
         </section>
 
         {/* ═══════════════════ ABOUT ═══════════════════ */}
-        <section id="about" className="py-20 sm:py-28 bg-white">
+        <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               {/* Photo */}
@@ -464,7 +454,7 @@ export default function Home() {
 
                 {/* Mission box */}
                 <FadeIn delay={0.2}>
-                  <div className="bg-[#FAFAFA] border border-gray-100 rounded-xl p-6 sm:p-7 mb-8">
+                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
                       {about.mission}
                     </h3>
@@ -485,7 +475,7 @@ export default function Home() {
         </section>
 
         {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
-        <section className="py-20 sm:py-28 bg-[#FAFAFA]">
+        <section className="py-20 sm:py-28 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn className="text-center mb-14 sm:mb-16">
               <SectionLabel>{advantages.label}</SectionLabel>
@@ -540,7 +530,7 @@ export default function Home() {
                 <FadeIn key={i} delay={i * 0.1}>
                   <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
                     <CardContent className="p-6 sm:p-8 flex flex-col h-full">
-                      <span className="text-4xl sm:text-5xl font-bold text-red-700/[0.12] group-hover:text-red-700/25 transition-colors duration-300 mb-4 block leading-none">
+                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
@@ -568,7 +558,7 @@ export default function Home() {
                   <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
                     {item.value}
                   </div>
-                  <div className="text-white/40 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+                  <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
                     {item.label}
                   </div>
                 </FadeIn>
@@ -586,7 +576,7 @@ export default function Home() {
             </FadeIn>
 
             <FadeIn>
-              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-[#FAFAFA] rounded-2xl max-w-2xl mx-auto border border-gray-100">
+              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
                   <Quote size={28} className="text-red-700/40" />
                 </div>
@@ -608,7 +598,7 @@ export default function Home() {
         </section>
 
         {/* ═══════════════════ CONTACT ═══════════════════ */}
-        <section id="contact" className="py-20 sm:py-28 bg-[#FAFAFA]">
+        <section id="contact" className="py-20 sm:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
               {/* Left: info */}
@@ -669,7 +659,7 @@ export default function Home() {
               <FadeIn delay={0.1} className="lg:col-span-3">
                 <form
                   onSubmit={handleSubmit}
-                  className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100"
+                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
                 >
                   <div className="grid sm:grid-cols-2 gap-5 mb-5">
                     <div className="space-y-2">
@@ -792,15 +782,10 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
             {/* Contacts */}
             <div>
-              <div className="flex flex-col leading-none mb-6">
-                <span className="text-[17px] font-bold tracking-tight">
-                  РАТНИКОВ
-                </span>
-                <span className="text-[9px] uppercase tracking-[0.18em] text-white/40 mt-1">
-                  недвижимость
-                </span>
-              </div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/30 mb-5">
+              <p className="text-sm font-semibold tracking-tight mb-6">
+                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+              </p>
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
                 {footer.contacts}
               </h3>
               <div className="space-y-3">
@@ -820,7 +805,7 @@ export default function Home() {
 
             {/* Quick links */}
             <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/30 mb-5">
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
                 {footer.quickLinks}
               </h3>
               <nav className="flex flex-col gap-3">
@@ -838,7 +823,7 @@ export default function Home() {
 
             {/* Social */}
             <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/30 mb-5">
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
                 {footer.followMe}
               </h3>
               <div className="flex flex-col gap-3">
@@ -866,10 +851,10 @@ export default function Home() {
         {/* Bottom bar */}
         <div className="border-t border-white/[0.06]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <p className="text-white/30 text-xs">
+            <p className="text-white/40 text-xs">
               &copy; 2025 {hero.name}. {footer.rights}
             </p>
-            <p className="text-white/30 text-xs">{footer.madeIn}</p>
+            <p className="text-white/40 text-xs">{footer.madeIn}</p>
           </div>
         </div>
       </footer>

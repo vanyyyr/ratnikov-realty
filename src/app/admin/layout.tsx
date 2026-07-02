@@ -70,11 +70,11 @@ function SidebarNav({
     <div className="flex flex-col h-full">
       <div className="px-5 py-6 flex items-center gap-3">
         <div className="w-9 h-9 bg-red-700 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-sm">РН</span>
+          <span className="text-white font-bold text-sm">ВК</span>
         </div>
         <div className="min-w-0">
-          <p className="text-white font-semibold text-sm truncate">Ратников</p>
-          <p className="text-gray-500 text-xs truncate">недвижимость</p>
+          <p className="text-white font-semibold text-sm truncate">Визитка</p>
+          <p className="text-gray-500 text-xs truncate">панель управления</p>
         </div>
       </div>
 
@@ -182,7 +182,7 @@ export default function AdminLayout({
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-[#0A0A0A] z-30 flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-red-700 rounded-md flex items-center justify-center">
-            <span className="text-white font-bold text-xs">РН</span>
+            <span className="text-white font-bold text-xs">ВК</span>
           </div>
           <span className="text-white font-semibold text-sm">CRM</span>
         </div>
