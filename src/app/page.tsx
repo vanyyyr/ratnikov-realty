@@ -208,7 +208,6 @@ export default function Home() {
   const reviews = t("reviews");
   const contact = t("contact");
   const faq = t("faq");
-  const exitIntent = t("exitIntent");
   const floating = t("floating");
   const footer = t("footer");
 
@@ -291,11 +290,6 @@ export default function Home() {
   const [callbackOpen, setCallbackOpen] = useState(false);
   const [callbackForm, setCallbackForm] = useState({ name: "", phone: "" });
   const [callbackLoading, setCallbackLoading] = useState(false);
-
-  // Exit intent state
-  const [exitIntentOpen, setExitIntentOpen] = useState(false);
-  const [exitIntentForm, setExitIntentForm] = useState({ name: "", phone: "" });
-  const [exitIntentLoading, setExitIntentLoading] = useState(false);
 
   // Floating buttons visibility (hide on scroll down, show on scroll up)
   const [floatingVisible, setFloatingVisible] = useState(true);
@@ -405,56 +399,6 @@ export default function Home() {
       setCallbackLoading(false);
     }
   }, [callbackForm, locale, contact]);
-
-  /* exit intent form handler */
-  const handleExitIntentSubmit = useCallback(async (e: FormEvent) => {
-    e.preventDefault();
-    if (!exitIntentForm.name.trim() || !exitIntentForm.phone.trim()) {
-      toast.error(contact.required);
-      return;
-    }
-    setExitIntentLoading(true);
-    try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: exitIntentForm.name,
-          phone: exitIntentForm.phone,
-          serviceType: "Exit Intent",
-        }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.duplicate) {
-          toast.warning(contact.duplicateWarning);
-        } else {
-          toast.success(exitIntent.success);
-        }
-        setExitIntentForm({ name: "", phone: "" });
-        setExitIntentOpen(false);
-        sessionStorage.setItem("formSubmitted", "true");
-      } else {
-        toast.error(contact.error);
-      }
-    } catch {
-      toast.error(contact.error);
-    } finally {
-      setExitIntentLoading(false);
-    }
-  }, [exitIntentForm, exitIntent, contact]);
-
-  /* exit intent listener */
-  useEffect(() => {
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY < 5 && !sessionStorage.getItem("exitIntentShown") && !sessionStorage.getItem("formSubmitted")) {
-        setExitIntentOpen(true);
-        sessionStorage.setItem("exitIntentShown", "true");
-      }
-    };
-    document.documentElement.addEventListener("mouseleave", handleMouseLeave);
-    return () => document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
-  }, []);
 
   /* nav links */
   const navLinks = [
@@ -1303,63 +1247,6 @@ export default function Home() {
                 <span className="flex items-center gap-2">
                   <PhoneCall size={16} />
                   {contact.callbackSubmit}
-                </span>
-              )}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ═══════════════════ EXIT INTENT DIALOG ═══════════════════ */}
-      <Dialog open={exitIntentOpen} onOpenChange={setExitIntentOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-red-700">{exitIntent.title}</DialogTitle>
-            <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
-              {exitIntent.description}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleExitIntentSubmit} className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label htmlFor="ei-name" className="text-xs font-medium">{exitIntent.name} *</Label>
-              <Input
-                id="ei-name"
-                value={exitIntentForm.name}
-                onChange={(e) => setExitIntentForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder={exitIntent.name}
-                required
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ei-phone" className="text-xs font-medium">{exitIntent.phone} *</Label>
-              <Input
-                id="ei-phone"
-                type="tel"
-                value={exitIntentForm.phone}
-                onChange={(e) => setExitIntentForm((p) => ({ ...p, phone: e.target.value }))}
-                placeholder={exitIntent.phone}
-                required
-                className="h-11"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={exitIntentLoading}
-              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
-            >
-              {exitIntentLoading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  {exitIntent.submit}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Send size={16} />
-                  {exitIntent.submit}
                 </span>
               )}
             </Button>

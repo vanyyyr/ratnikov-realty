@@ -489,3 +489,25 @@ Stage Summary:
 - Dynamic show/hide toggle in settings (saves to DB, applies on landing)
 - Reviews display as cards with ratings, names, dates on landing page
 - All API routes functional, lint clean, no errors
+---
+Task ID: 9
+Agent: Main Orchestrator
+Task: Verify Telegram lead notifications + remove exit intent popup
+
+Work Log:
+- Verified that /api/leads already calls sendNotification() which sends to both Telegram and Max
+- Confirmed the notification pipeline: lead POST → sendNotification → sendTelegramNotification + sendMaxNotification
+- Tested form submission from landing page — lead created, notification queries executed (200 response)
+- Removed exit intent popup entirely from page.tsx:
+  - Removed exitIntent translation variable
+  - Removed exitIntentOpen, exitIntentForm, exitIntentLoading state
+  - Removed handleExitIntentSubmit callback
+  - Removed mouseleave event listener useEffect
+  - Removed Exit Intent Dialog JSX (the "Подождите!" popup)
+- Cleaned up leftover comments and blank lines
+- Lint clean, browser verified — no exit intent dialog in DOM, form submission works
+
+Stage Summary:
+- Telegram notifications for leads were ALREADY working — they fire on every lead submission
+- To receive notifications: configure Bot Token and Chat ID in CRM Settings → "Уведомления Telegram"
+- Exit intent popup ("Подождите!") completely removed
