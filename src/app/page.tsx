@@ -158,6 +158,17 @@ export default function Home() {
     comment: "",
   });
   const [loading, setLoading] = useState(false);
+  const [cianUrl, setCianUrl] = useState("https://cian.ru/cat.php?deal_type=sale&engine_version=extended");
+
+  /* load public settings */
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((s) => {
+        if (s.cian_profile_url) setCianUrl(s.cian_profile_url);
+      })
+      .catch(() => {});
+  }, []);
 
   // Callback dialog state
   const [callbackOpen, setCallbackOpen] = useState(false);
@@ -512,7 +523,7 @@ export default function Home() {
                       <ArrowRight size={17} />
                     </Button>
                     <a
-                      href="https://cian.ru/cat.php?deal_type=sale&engine_version=extended"
+                      href={cianUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
