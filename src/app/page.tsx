@@ -557,29 +557,8 @@ export default function Home() {
 
         {/* ═══════════════════ ABOUT ═══════════════════ */}
         <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-              {/* Photo */}
-              <FadeIn>
-                <div className="relative max-w-md mx-auto lg:mx-0">
-                  <div className="relative rounded-2xl overflow-hidden shadow-xl">
-                    <Image
-                      src="/hero-photo.jpg"
-                      alt={hero.name}
-                      width={600}
-                      height={800}
-                      className="w-full h-auto object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  {/* Decorative shapes */}
-                  <div className="absolute -bottom-4 -right-4 w-28 h-28 bg-red-700/5 rounded-2xl -z-10" />
-                  <div className="absolute -top-4 -left-4 w-16 h-16 border-2 border-red-700/15 rounded-xl -z-10" />
-                </div>
-              </FadeIn>
-
-              {/* Text */}
-              <div>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div>
                 <FadeIn>
                   <SectionLabel>{about.label}</SectionLabel>
                   <SectionHeading className="mb-6">{about.title}</SectionHeading>
@@ -610,7 +589,6 @@ export default function Home() {
                 </FadeIn>
               </div>
             </div>
-          </div>
         </section>
 
         {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
