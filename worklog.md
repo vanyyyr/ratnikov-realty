@@ -452,3 +452,40 @@ Stage Summary:
 - Admin settings page has new fields for phone, address, Max profile
 - 10 animation improvements applied
 - Lint: 0 errors
+---
+Task ID: 8
+Agent: Main Orchestrator
+Task: Add CRM reviews management + dynamic show/hide toggle on landing page
+
+Work Log:
+- Added Review model to Prisma schema (id, name, text, rating, source, isHidden, sortOrder, timestamps)
+- Ran `bunx prisma db push` to sync DB — Review table created successfully
+- Added `show_reviews` to PUBLIC_KEYS in `/api/settings/route.ts`
+- Added `show_reviews` to SETTINGS_KEYS in `/api/admin/settings/route.ts`
+- Created public API `/api/reviews` (GET — visible reviews only, sorted by sortOrder/createdAt)
+- Created admin API `/api/admin/reviews` (GET all, POST create)
+- Created admin API `/api/admin/reviews/[id]` (PUT update, DELETE remove)
+- Added Switch toggle for "Раздел отзывов" to admin settings page with auto-save
+- Fixed missing `Phone` icon import in settings page
+- Created full CRM admin page at `/admin/reviews` with:
+  - Review list with star ratings, source badges, visibility toggle
+  - Create/edit dialog with interactive star rating, source selector, sort order, hide toggle
+  - Delete confirmation dialog
+  - Empty state with message
+- Added "Отзывы" with Star icon to CRM sidebar navigation and PAGE_TITLES
+- Updated landing page `page.tsx`:
+  - Added `showReviews: true` to siteSettings state
+  - Added `dbReviews` state for dynamic review data
+  - Settings fetch now reads `show_reviews` setting
+  - Separate `fetch("/api/reviews")` loads reviews from DB
+  - Reviews section conditionally renders based on `siteSettings.showReviews`
+  - When reviews exist: grid of cards (sm:2col, lg:3col) with stars, quote, name avatar, date
+  - When no reviews: original placeholder message
+  - Nav links conditionally include reviews link based on toggle
+- Browser verified: landing shows reviews, admin CRUD works, toggle hides/shows section dynamically
+
+Stage Summary:
+- Complete review management system in CRM
+- Dynamic show/hide toggle in settings (saves to DB, applies on landing)
+- Reviews display as cards with ratings, names, dates on landing page
+- All API routes functional, lint clean, no errors

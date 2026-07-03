@@ -1,0 +1,1309 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
+     4→import Image from "next/image";
+     5→import { useI18n } from "@/lib/i18n-context";
+     6→import { Button } from "@/components/ui/button";
+     7→import { Input } from "@/components/ui/input";
+     8→import { Textarea } from "@/components/ui/textarea";
+     9→import { Label } from "@/components/ui/label";
+    10→import { Card, CardContent } from "@/components/ui/card";
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from "@/components/ui/select";
+    18→import { toast } from "sonner";
+    19→import { Badge } from "@/components/ui/badge";
+    20→import {
+    21→  Sheet,
+    22→  SheetContent,
+    23→  SheetTrigger,
+    24→  SheetTitle,
+    25→} from "@/components/ui/sheet";
+    26→import {
+    27→  Dialog,
+    28→  DialogContent,
+    29→  DialogHeader,
+    30→  DialogTitle,
+    31→  DialogDescription,
+    32→} from "@/components/ui/dialog";
+    33→import {
+    34→  Accordion,
+    35→  AccordionContent,
+    36→  AccordionItem,
+    37→  AccordionTrigger,
+    38→} from "@/components/ui/accordion";
+    39→import {
+    40→  Tooltip,
+    41→  TooltipContent,
+    42→  TooltipProvider,
+    43→  TooltipTrigger,
+    44→} from "@/components/ui/tooltip";
+    45→import {
+    46→  Menu,
+    47→  BarChart3,
+    48→  ShieldCheck,
+    49→  Megaphone,
+    50→  Handshake,
+    51→  MessageCircle,
+    52→  ChevronDown,
+    53→  Phone,
+    54→  MapPin,
+    55→  Send,
+    56→  ArrowRight,
+    57→  ArrowUp,
+    58→  ExternalLink,
+    59→  Quote,
+    60→  Star,
+    61→  Globe,
+    62→  PhoneCall,
+    63→} from "lucide-react";
+    64→
+    65→/* ──────────────────────────── helpers ──────────────────────────── */
+    66→
+    67→function formatPhone(raw: string): string {
+    68→  const d = raw.replace(/\D/g, "");
+    69→  if (d.length === 11) {
+    70→    return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
+    71→  }
+    72→  return raw;
+    73→}
+    74→
+    75→function useCountUp(target: string, visible: boolean) {
+    76→  const [display, setDisplay] = useState("0");
+    77→  useEffect(() => {
+    78→    if (!visible) return;
+    79→    const numMatch = target.match(/[\d.]+/);
+    80→    if (!numMatch) {
+    81→      // Use requestAnimationFrame to avoid synchronous setState in effect
+    82→      requestAnimationFrame(() => setDisplay(target));
+    83→      return;
+    84→    }
+    85→    const num = parseFloat(numMatch[0]);
+    86→    const suffix = target.replace(numMatch[0], "");
+    87→    const duration = 1500;
+    88→    const start = Date.now();
+    89→    const tick = () => {
+    90→      const elapsed = Date.now() - start;
+    91→      const progress = Math.min(elapsed / duration, 1);
+    92→      const eased = 1 - Math.pow(1 - progress, 3);
+    93→      const current = num * eased;
+    94→      setDisplay(Number.isInteger(num) ? Math.round(current) + suffix : current.toFixed(1) + suffix);
+    95→      if (progress < 1) requestAnimationFrame(tick);
+    96→    };
+    97→    requestAnimationFrame(tick);
+    98→  }, [visible, target]);
+    99→  return display;
+   100→}
+   101→
+   102→function FadeIn({
+   103→  children,
+   104→  className = "",
+   105→  delay = 0,
+   106→}: {
+   107→  children: ReactNode;
+   108→  className?: string;
+   109→  delay?: number;
+   110→}) {
+   111→  const ref = useRef<HTMLDivElement>(null);
+   112→  const [visible, setVisible] = useState(false);
+   113→
+   114→  useEffect(() => {
+   115→    const el = ref.current;
+   116→    if (!el) return;
+   117→    const obs = new IntersectionObserver(
+   118→      ([e]) => {
+   119→        if (e.isIntersecting) {
+   120→          setVisible(true);
+   121→          obs.disconnect();
+   122→        }
+   123→      },
+   124→      { threshold: 0.08 },
+   125→    );
+   126→    obs.observe(el);
+   127→    return () => obs.disconnect();
+   128→  }, []);
+   129→
+   130→  return (
+   131→    <div
+   132→      ref={ref}
+   133→      className={className}
+   134→      style={{
+   135→        opacity: visible ? 1 : 0,
+   136→        transform: visible ? "translateY(0) scale(1)" : "translateY(30px) scale(0.98)",
+   137→        filter: visible ? "blur(0)" : "blur(4px)",
+   138→        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, filter 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+   139→      }}
+   140→    >
+   141→      {children}
+   142→    </div>
+   143→  );
+   144→}
+   145→
+   146→function SectionLabel({ children }: { children: ReactNode }) {
+   147→  return (
+   148→    <span className="inline-flex flex-col items-center sm:items-start text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+   149→      <span className="block w-8 h-0.5 bg-red-700 mb-3" />
+   150→      {children}
+   151→    </span>
+   152→  );
+   153→}
+   154→
+   155→function SectionHeading({
+   156→  children,
+   157→  className = "",
+   158→}: {
+   159→  children: ReactNode;
+   160→  className?: string;
+   161→}) {
+   162→  return (
+   163→    <h2
+   164→      className={`text-3xl sm:text-4xl font-bold text-foreground tracking-tight ${className}`}
+   165→    >
+   166→      {children}
+   167→    </h2>
+   168→  );
+   169→}
+   170→
+   171→function StatItem({ value, label }: { value: string; label: string }) {
+   172→  const ref = useRef<HTMLDivElement>(null);
+   173→  const [visible, setVisible] = useState(false);
+   174→  useEffect(() => {
+   175→    const el = ref.current;
+   176→    if (!el) return;
+   177→    const obs = new IntersectionObserver(
+   178→      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+   179→      { threshold: 0.3 },
+   180→    );
+   181→    obs.observe(el);
+   182→    return () => obs.disconnect();
+   183→  }, []);
+   184→  const display = useCountUp(value, visible);
+   185→  return (
+   186→    <div ref={ref} className="text-center">
+   187→      <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
+   188→        {display}
+   189→      </div>
+   190→      <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+   191→        {label}
+   192→      </div>
+   193→    </div>
+   194→  );
+   195→}
+   196→
+   197→/* ──────────────────────────── page ──────────────────────────── */
+   198→
+   199→export default function Home() {
+   200→  const { locale, setLocale, t } = useI18n();
+   201→
+   202→  const nav = t("nav");
+   203→  const hero = t("hero");
+   204→  const about = t("about");
+   205→  const advantages = t("advantages");
+   206→  const services = t("services");
+   207→  const stats = t("stats");
+   208→  const reviews = t("reviews");
+   209→  const contact = t("contact");
+   210→  const faq = t("faq");
+   211→  const exitIntent = t("exitIntent");
+   212→  const floating = t("floating");
+   213→  const footer = t("footer");
+   214→
+   215→  /* state */
+   216→  const [scrolled, setScrolled] = useState(false);
+   217→  const [mobileOpen, setMobileOpen] = useState(false);
+   218→  const [formData, setFormData] = useState({
+   219→    name: "",
+   220→    phone: "",
+   221→    serviceType: "",
+   222→    comment: "",
+   223→  });
+   224→  const [loading, setLoading] = useState(false);
+   225→  const [scrollProgress, setScrollProgress] = useState(0);
+   226→  const [heroParallax, setHeroParallax] = useState(0);
+   227→  const [siteSettings, setSiteSettings] = useState({
+   228→    cianUrl: "https://cian.ru/cat.php?deal_type=sale&engine_version=extended",
+   229→    telegram: "https://t.me/ilyaratnikov",
+   230→    maxUrl: "https://max.ru",
+   231→    vk: "#",
+   232→    instagram: "#",
+   233→    whatsapp: "#",
+   234→    phoneRaw: "+79892467798",
+   235→    phone: "+7 (989) 246-77-98",
+   236→    address: "Офис: ул. Комсомола, 41",
+   237→    metrikaId: "",
+   238→  });
+   239→
+   240→  /* load public settings */
+   241→  useEffect(() => {
+   242→    fetch("/api/settings")
+   243→      .then((r) => r.json())
+   244→      .then((s) => {
+   245→        setSiteSettings((prev) => ({
+   246→          ...prev,
+   247→          cianUrl: s.cian_profile_url || prev.cianUrl,
+   248→          telegram: s.social_telegram || prev.telegram,
+   249→          maxUrl: s.max_profile_url || prev.maxUrl,
+   250→          vk: s.social_vk || prev.vk,
+   251→          instagram: s.social_instagram || prev.instagram,
+   252→          whatsapp: s.social_whatsapp || prev.whatsapp,
+   253→          phoneRaw: s.phone || prev.phoneRaw,
+   254→          phone: s.phone ? formatPhone(s.phone) : prev.phone,
+   255→          address: s.address ? "Офис: " + s.address : prev.address,
+   256→          metrikaId: s.yandex_metrika_id || prev.metrikaId,
+   257→        }));
+   258→
+   259→        if (s.yandex_metrika_id) {
+   260→          if (!document.getElementById("yandex-metrika")) {
+   261→            const script = document.createElement("script");
+   262→            script.id = "yandex-metrika";
+   263→            script.innerHTML = `
+   264→              (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+   265→              m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+   266→              (window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
+   267→              ym(${s.yandex_metrika_id},"init",{clickmap:true,trackLinks:true,accurateTrackBounce:true});
+   268→            `;
+   269→            document.head.appendChild(script);
+   270→          }
+   271→        }
+   272→      })
+   273→      .catch(() => {});
+   274→  }, []);
+   275→
+   276→  // Callback dialog state
+   277→  const [callbackOpen, setCallbackOpen] = useState(false);
+   278→  const [callbackForm, setCallbackForm] = useState({ name: "", phone: "" });
+   279→  const [callbackLoading, setCallbackLoading] = useState(false);
+   280→
+   281→  // Exit intent state
+   282→  const [exitIntentOpen, setExitIntentOpen] = useState(false);
+   283→  const [exitIntentForm, setExitIntentForm] = useState({ name: "", phone: "" });
+   284→  const [exitIntentLoading, setExitIntentLoading] = useState(false);
+   285→
+   286→  // Floating buttons visibility (hide on scroll down, show on scroll up)
+   287→  const [floatingVisible, setFloatingVisible] = useState(true);
+   288→
+   289→  /* scroll listener */
+   290→  useEffect(() => {
+   291→    let lastScrollY = window.scrollY;
+   292→    let ticking = false;
+   293→    const onScroll = () => {
+   294→      if (!ticking) {
+   295→        window.requestAnimationFrame(() => {
+   296→          const currentScrollY = window.scrollY;
+   297→          setScrolled(currentScrollY > 60);
+   298→          setFloatingVisible(currentScrollY < lastScrollY || currentScrollY < 100);
+   299→          const total = document.documentElement.scrollHeight - window.innerHeight;
+   300→          setScrollProgress(total > 0 ? (currentScrollY / total) * 100 : 0);
+   301→          setHeroParallax(currentScrollY * 0.3);
+   302→          lastScrollY = currentScrollY;
+   303→          ticking = false;
+   304→        });
+   305→        ticking = true;
+   306→      }
+   307→    };
+   308→    window.addEventListener("scroll", onScroll, { passive: true });
+   309→    return () => window.removeEventListener("scroll", onScroll);
+   310→  }, []);
+   311→
+   312→  const scrollTo = (id: string) => {
+   313→    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+   314→    setMobileOpen(false);
+   315→  };
+   316→
+   317→  /* form */
+   318→  const handleSubmit = async (e: FormEvent) => {
+   319→    e.preventDefault();
+   320→    if (!formData.name.trim() || !formData.phone.trim()) {
+   321→      toast.error(contact.required);
+   322→      return;
+   323→    }
+   324→    setLoading(true);
+   325→    try {
+   326→      const res = await fetch("/api/leads", {
+   327→        method: "POST",
+   328→        headers: { "Content-Type": "application/json" },
+   329→        body: JSON.stringify({
+   330→          name: formData.name,
+   331→          phone: formData.phone,
+   332→          serviceType: formData.serviceType || undefined,
+   333→          comment: formData.comment || undefined,
+   334→        }),
+   335→      });
+   336→      if (res.ok) {
+   337→        const json = await res.json();
+   338→        if (json.duplicate) {
+   339→          toast.warning(contact.duplicateWarning);
+   340→        } else {
+   341→          toast.success(contact.success);
+   342→        }
+   343→        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
+   344→      } else {
+   345→        toast.error(contact.error);
+   346→      }
+   347→    } catch {
+   348→      toast.error(contact.error);
+   349→    } finally {
+   350→      setLoading(false);
+   351→    }
+   352→  };
+   353→
+   354→  /* advantage icons */
+   355→  const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
+   356→
+   357→  /* callback form handler */
+   358→  const handleCallbackSubmit = useCallback(async (e: FormEvent) => {
+   359→    e.preventDefault();
+   360→    if (!callbackForm.name.trim() || !callbackForm.phone.trim()) {
+   361→      toast.error(contact.required);
+   362→      return;
+   363→    }
+   364→    setCallbackLoading(true);
+   365→    try {
+   366→      const res = await fetch("/api/leads", {
+   367→        method: "POST",
+   368→        headers: { "Content-Type": "application/json" },
+   369→        body: JSON.stringify({
+   370→          name: callbackForm.name,
+   371→          phone: callbackForm.phone,
+   372→          serviceType: locale === "ru" ? "Обратный звонок" : "Callback",
+   373→        }),
+   374→      });
+   375→      if (res.ok) {
+   376→        const json = await res.json();
+   377→        if (json.duplicate) {
+   378→          toast.warning(contact.duplicateWarning);
+   379→        } else {
+   380→          toast.success(contact.callbackSuccess);
+   381→        }
+   382→        setCallbackForm({ name: "", phone: "" });
+   383→        setCallbackOpen(false);
+   384→        sessionStorage.setItem("formSubmitted", "true");
+   385→      } else {
+   386→        toast.error(contact.error);
+   387→      }
+   388→    } catch {
+   389→      toast.error(contact.error);
+   390→    } finally {
+   391→      setCallbackLoading(false);
+   392→    }
+   393→  }, [callbackForm, locale, contact]);
+   394→
+   395→  /* exit intent form handler */
+   396→  const handleExitIntentSubmit = useCallback(async (e: FormEvent) => {
+   397→    e.preventDefault();
+   398→    if (!exitIntentForm.name.trim() || !exitIntentForm.phone.trim()) {
+   399→      toast.error(contact.required);
+   400→      return;
+   401→    }
+   402→    setExitIntentLoading(true);
+   403→    try {
+   404→      const res = await fetch("/api/leads", {
+   405→        method: "POST",
+   406→        headers: { "Content-Type": "application/json" },
+   407→        body: JSON.stringify({
+   408→          name: exitIntentForm.name,
+   409→          phone: exitIntentForm.phone,
+   410→          serviceType: "Exit Intent",
+   411→        }),
+   412→      });
+   413→      if (res.ok) {
+   414→        const json = await res.json();
+   415→        if (json.duplicate) {
+   416→          toast.warning(contact.duplicateWarning);
+   417→        } else {
+   418→          toast.success(exitIntent.success);
+   419→        }
+   420→        setExitIntentForm({ name: "", phone: "" });
+   421→        setExitIntentOpen(false);
+   422→        sessionStorage.setItem("formSubmitted", "true");
+   423→      } else {
+   424→        toast.error(contact.error);
+   425→      }
+   426→    } catch {
+   427→      toast.error(contact.error);
+   428→    } finally {
+   429→      setExitIntentLoading(false);
+   430→    }
+   431→  }, [exitIntentForm, exitIntent, contact]);
+   432→
+   433→  /* exit intent listener */
+   434→  useEffect(() => {
+   435→    const handleMouseLeave = (e: MouseEvent) => {
+   436→      if (e.clientY < 5 && !sessionStorage.getItem("exitIntentShown") && !sessionStorage.getItem("formSubmitted")) {
+   437→        setExitIntentOpen(true);
+   438→        sessionStorage.setItem("exitIntentShown", "true");
+   439→      }
+   440→    };
+   441→    document.documentElement.addEventListener("mouseleave", handleMouseLeave);
+   442→    return () => document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
+   443→  }, []);
+   444→
+   445→  /* nav links */
+   446→  const navLinks = [
+   447→    { label: nav.about, id: "about" },
+   448→    { label: nav.services, id: "services" },
+   449→    { label: nav.reviews, id: "reviews" },
+   450→    { label: nav.contact, id: "contact" },
+   451→  ];
+   452→
+   453→  return (
+   454→    <div className="min-h-screen flex flex-col bg-white">
+   455→      {/* Scroll progress bar */}
+   456→      <div
+   457→        className="fixed top-0 left-0 h-[3px] bg-red-700 z-[60] transition-[width] duration-100"
+   458→        style={{ width: `${scrollProgress}%` }}
+   459→      />
+   460→
+   461→      {/* ═══════════════════ NAVBAR ═══════════════════ */}
+   462→      <header
+   463→        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+   464→          scrolled
+   465→            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] animate-[slideDown_0.3s_ease-out]"
+   466→            : "bg-transparent"
+   467→        }`}
+   468→      >
+   469→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+   470→          {/* Logo */}
+   471→          <button
+   472→            onClick={() => scrollTo("hero")}
+   473→            className="flex items-center select-none"
+   474→          >
+   475→            <span
+   476→              className={`text-[14px] font-semibold tracking-tight transition-colors ${
+   477→                scrolled ? "text-foreground" : "text-white"
+   478→              }`}
+   479→            >
+   480→              {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   481→            </span>
+   482→          </button>
+   483→
+   484→          {/* Desktop nav links */}
+   485→          <nav className="hidden lg:flex items-center gap-8">
+   486→            {navLinks.map((l) => (
+   487→              <button
+   488→                key={l.id}
+   489→                onClick={() => scrollTo(l.id)}
+   490→                className={`text-[13px] font-medium transition-colors ${
+   491→                  scrolled
+   492→                    ? "text-foreground/70 hover:text-red-700"
+   493→                    : "text-white/70 hover:text-white"
+   494→                }`}
+   495→              >
+   496→                {l.label}
+   497→              </button>
+   498→            ))}
+   499→          </nav>
+   500→
+   501→          {/* Desktop right side */}
+   502→          <div className="hidden lg:flex items-center gap-3">
+   503→            {/* Lang toggle */}
+   504→            <div className="flex items-center bg-black/5 rounded-md p-[3px]">
+   505→              {(["ru", "en"] as const).map((lng) => (
+   506→                <button
+   507→                  key={lng}
+   508→                  onClick={() => setLocale(lng)}
+   509→                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-[5px] transition-all duration-200 ${
+   510→                    locale === lng
+   511→                      ? "bg-red-700 text-white shadow-sm"
+   512→                      : scrolled
+   513→                        ? "text-foreground/50 hover:text-foreground"
+   514→                        : "text-white/50 hover:text-white"
+   515→                  }`}
+   516→                >
+   517→                  {lng}
+   518→                </button>
+   519→              ))}
+   520→            </div>
+   521→
+   522→            <Button
+   523→              onClick={() => scrollTo("contact")}
+   524→              className="bg-red-700 hover:bg-red-800 text-white h-9 px-5 text-[13px] font-medium rounded-md"
+   525→              size="default"
+   526→            >
+   527→              {hero.cta}
+   528→            </Button>
+   529→          </div>
+   530→
+   531→          {/* Mobile hamburger */}
+   532→          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+   533→            <SheetTrigger asChild>
+   534→              <button
+   535→                className={`lg:hidden transition-colors ${
+   536→                  scrolled ? "text-foreground" : "text-white"
+   537→                }`}
+   538→                aria-label="Menu"
+   539→              >
+   540→                <Menu size={24} />
+   541→              </button>
+   542→            </SheetTrigger>
+   543→            <SheetContent side="right" className="w-[300px] pt-10">
+   544→              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
+   545→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   546→              </SheetTitle>
+   547→
+   548→              <nav className="flex flex-col gap-1">
+   549→                {navLinks.map((l) => (
+   550→                  <button
+   551→                    key={l.id}
+   552→                    onClick={() => scrollTo(l.id)}
+   553→                    className="text-left text-[15px] font-medium text-foreground/80 hover:text-red-700 transition-colors py-3 border-b border-border/50"
+   554→                  >
+   555→                    {l.label}
+   556→                  </button>
+   557→                ))}
+   558→              </nav>
+   559→
+   560→              <div className="flex items-center bg-gray-100 rounded-md p-[3px] w-fit mt-8">
+   561→                {(["ru", "en"] as const).map((lng) => (
+   562→                  <button
+   563→                    key={lng}
+   564→                    onClick={() => setLocale(lng)}
+   565→                    className={`px-3 py-1.5 text-[12px] font-bold uppercase rounded-[5px] transition-all ${
+   566→                      locale === lng
+   567→                        ? "bg-red-700 text-white"
+   568→                        : "text-foreground/50"
+   569→                    }`}
+   570→                  >
+   571→                    {lng}
+   572→                  </button>
+   573→                ))}
+   574→              </div>
+   575→
+   576→              <Button
+   577→                onClick={() => scrollTo("contact")}
+   578→                className="bg-red-700 hover:bg-red-800 text-white w-full h-11 mt-6 text-[14px] font-medium"
+   579→              >
+   580→                {hero.cta}
+   581→              </Button>
+   582→            </SheetContent>
+   583→          </Sheet>
+   584→        </div>
+   585→      </header>
+   586→
+   587→      <main className="flex-1">
+   588→        {/* ═══════════════════ HERO ═══════════════════ */}
+   589→        <section
+   590→          id="hero"
+   591→          className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
+   592→        >
+   593→          {/* background layers */}
+   594→          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" style={{ transform: `translateY(${heroParallax}px)` }} />
+   595→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" style={{ transform: `translateY(${heroParallax}px)` }} />
+   596→
+   597→          {/* thin red accent line at top */}
+   598→          <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
+   599→
+   600→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
+   601→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   602→              {/* Text content */}
+   603→              <div className="text-center lg:text-left order-2 lg:order-1">
+   604→                <FadeIn>
+   605→                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
+   606→                    {hero.greeting}
+   607→                  </p>
+   608→                </FadeIn>
+   609→
+   610→                <FadeIn delay={0.1}>
+   611→                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+   612→                    {hero.name}
+   613→                  </h1>
+   614→                </FadeIn>
+   615→
+   616→                <FadeIn delay={0.2}>
+   617→                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+   618→                    {hero.title}
+   619→                  </p>
+   620→                </FadeIn>
+   621→
+   622→                <FadeIn delay={0.3}>
+   623→                  <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+   624→                    {hero.subtitle}
+   625→                  </p>
+   626→                </FadeIn>
+   627→
+   628→                <FadeIn delay={0.4}>
+   629→                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+   630→                    <Button
+   631→                      onClick={() => scrollTo("contact")}
+   632→                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow btn-glow"
+   633→                    >
+   634→                      {hero.cta}
+   635→                      <ArrowRight size={17} />
+   636→                    </Button>
+   637→                    <a
+   638→                      href={siteSettings.cianUrl}
+   639→                      target="_blank"
+   640→                      rel="noopener noreferrer"
+   641→                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
+   642→                    >
+   643→                      {hero.cian}
+   644→                      <ExternalLink size={15} />
+   645→                    </a>
+   646→                  </div>
+   647→                </FadeIn>
+   648→              </div>
+   649→
+   650→              {/* Photo */}
+   651→              <FadeIn delay={0.3} className="order-1 lg:order-2 flex justify-center lg:justify-end">
+   652→                <div className="relative">
+   653→                  <div className="absolute -left-2 top-6 bottom-6 w-[3px] bg-gradient-to-b from-red-700 via-red-600 to-red-800 rounded-full hidden sm:block" />
+   654→                  <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10">
+   655→                    <Image
+   656→                      src="/hero-photo.jpg"
+   657→                      alt={hero.name}
+   658→                      width={380}
+   659→                      height={507}
+   660→                      className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
+   661→                      priority
+   662→                      fetchPriority="high"
+   663→                    />
+   664→                  </div>
+   665→                  {/* Decorative corner */}
+   666→                  <div className="absolute -bottom-3 -right-3 w-20 h-20 border-2 border-red-700/20 rounded-2xl -z-10 hidden sm:block" />
+   667→                </div>
+   668→              </FadeIn>
+   669→            </div>
+   670→          </div>
+   671→
+   672→          {/* Scroll indicator */}
+   673→          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+   674→            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
+   675→              {hero.scroll}
+   676→            </span>
+   677→            <ChevronDown className="text-white/50 animate-bounce" size={18} />
+   678→          </div>
+   679→        </section>
+   680→
+   681→        {/* ═══════════════════ ABOUT ═══════════════════ */}
+   682→        <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
+   683→          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   684→            <div>
+   685→                <FadeIn>
+   686→                  <SectionLabel>{about.label}</SectionLabel>
+   687→                  <SectionHeading className="mb-6">{about.title}</SectionHeading>
+   688→                </FadeIn>
+   689→
+   690→                <FadeIn delay={0.1}>
+   691→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+   692→                    {about.description}
+   693→                  </p>
+   694→                </FadeIn>
+   695→
+   696→                {/* Mission box */}
+   697→                <FadeIn delay={0.2}>
+   698→                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
+   699→                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
+   700→                      {about.mission}
+   701→                    </h3>
+   702→                    <p className="text-muted-foreground text-sm leading-relaxed">
+   703→                      {about.missionText}
+   704→                    </p>
+   705→                  </div>
+   706→                </FadeIn>
+   707→
+   708→                <FadeIn delay={0.3}>
+   709→                  <Badge className="bg-red-700 text-white hover:bg-red-800 text-xs px-4 py-1.5 rounded-md font-medium">
+   710→                    {about.partner}
+   711→                  </Badge>
+   712→                </FadeIn>
+   713→              </div>
+   714→            </div>
+   715→        </section>
+   716→
+   717→        {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
+   718→        <section className="py-20 sm:py-28 bg-gray-50">
+   719→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   720→            <FadeIn className="text-center mb-14 sm:mb-16">
+   721→              <SectionLabel>{advantages.label}</SectionLabel>
+   722→              <SectionHeading>{advantages.title}</SectionHeading>
+   723→            </FadeIn>
+   724→
+   725→            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+   726→              {advantages.items.map((item, i) => {
+   727→                const Icon = advIcons[i];
+   728→                return (
+   729→                  <FadeIn key={i} delay={i * 0.1}>
+   730→                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.06] hover:-translate-y-1 transition-all duration-300 py-0">
+   731→                      <CardContent className="p-6 sm:p-8">
+   732→                        <div className="flex items-start gap-4">
+   733→                          <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
+   734→                            <Icon
+   735→                              size={21}
+   736→                              className="text-red-700 group-hover:text-white transition-colors duration-300"
+   737→                            />
+   738→                          </div>
+   739→                          <div className="min-w-0">
+   740→                            <h3 className="text-[15px] sm:text-base font-semibold text-foreground mb-2 leading-snug">
+   741→                              {item.title}
+   742→                            </h3>
+   743→                            <p className="text-muted-foreground text-sm leading-relaxed">
+   744→                              {item.text}
+   745→                            </p>
+   746→                          </div>
+   747→                        </div>
+   748→                      </CardContent>
+   749→                    </Card>
+   750→                  </FadeIn>
+   751→                );
+   752→              })}
+   753→            </div>
+   754→          </div>
+   755→        </section>
+   756→
+   757→        {/* ═══════════════════ SERVICES ═══════════════════ */}
+   758→        <section id="services" className="py-20 sm:py-28 bg-white">
+   759→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   760→            <FadeIn className="text-center mb-14 sm:mb-16">
+   761→              <SectionLabel>{services.label}</SectionLabel>
+   762→              <SectionHeading className="mb-4">{services.title}</SectionHeading>
+   763→              <p className="text-muted-foreground text-[15px] sm:text-base max-w-2xl mx-auto leading-relaxed">
+   764→                {services.subtitle}
+   765→              </p>
+   766→            </FadeIn>
+   767→
+   768→            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+   769→              {services.items.map((item, i) => (
+   770→                <FadeIn key={i} delay={i * 0.12}>
+   771→                  <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   772→                    <CardContent className="p-6 sm:p-8 flex flex-col h-full">
+   773→                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
+   774→                        {String(i + 1).padStart(2, "0")}
+   775→                      </span>
+   776→                      <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
+   777→                        {item.title}
+   778→                      </h3>
+   779→                      <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+   780→                        {item.text}
+   781→                      </p>
+   782→                    </CardContent>
+   783→                  </Card>
+   784→                </FadeIn>
+   785→              ))}
+   786→            </div>
+   787→          </div>
+   788→        </section>
+   789→
+   790→        {/* ═══════════════════ STATS ═══════════════════ */}
+   791→        <section className="py-20 sm:py-24 bg-[#0A0A0A] relative overflow-hidden">
+   792→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(185,28,28,0.06),transparent)]" />
+   793→
+   794→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   795→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+   796→              {stats.items.map((item, i) => (
+   797→                <FadeIn key={i} delay={i * 0.1}>
+   798→                  <StatItem value={item.value} label={item.label} />
+   799→                </FadeIn>
+   800→              ))}
+   801→            </div>
+   802→          </div>
+   803→        </section>
+   804→
+   805→        {/* ═══════════════════ REVIEWS ═══════════════════ */}
+   806→        <section id="reviews" className="py-20 sm:py-28 bg-white">
+   807→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   808→            <FadeIn className="text-center mb-14 sm:mb-16">
+   809→              <SectionLabel>{reviews.label}</SectionLabel>
+   810→              <SectionHeading>{reviews.title}</SectionHeading>
+   811→            </FadeIn>
+   812→
+   813→            <FadeIn>
+   814→              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+   815→                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+   816→                  <Quote size={28} className="text-red-700/40" />
+   817→                </div>
+   818→                <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+   819→                  {reviews.placeholder}
+   820→                </p>
+   821→                <div className="flex items-center justify-center gap-1.5">
+   822→                  {[...Array(5)].map((_, i) => (
+   823→                    <Star
+   824→                      key={i}
+   825→                      size={18}
+   826→                      className="text-gray-200 fill-gray-200"
+   827→                    />
+   828→                  ))}
+   829→                </div>
+   830→              </div>
+   831→            </FadeIn>
+   832→          </div>
+   833→        </section>
+   834→
+   835→        {/* ═══════════════════ FAQ ═══════════════════ */}
+   836→        <section id="faq" className="py-20 sm:py-28 bg-gray-50">
+   837→          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   838→            <FadeIn className="text-center mb-14 sm:mb-16">
+   839→              <SectionLabel>{faq.label}</SectionLabel>
+   840→              <SectionHeading>{faq.title}</SectionHeading>
+   841→            </FadeIn>
+   842→
+   843→            <FadeIn delay={0.1}>
+   844→              <Accordion type="single" collapsible className="w-full">
+   845→                {faq.items.map((item, i) => (
+   846→                  <AccordionItem
+   847→                    key={i}
+   848→                    value={`faq-${i}`}
+   849→                    className="border-gray-200/80 bg-white rounded-xl px-6 mb-3 shadow-sm data-[state=open]:shadow-md transition-shadow"
+   850→                  >
+   851→                    <AccordionTrigger className="text-left text-[15px] font-semibold text-foreground hover:text-red-700 hover:no-underline py-5">
+   852→                      {item.question}
+   853→                    </AccordionTrigger>
+   854→                    <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-5">
+   855→                      {item.answer}
+   856→                    </AccordionContent>
+   857→                  </AccordionItem>
+   858→                ))}
+   859→              </Accordion>
+   860→            </FadeIn>
+   861→          </div>
+   862→        </section>
+   863→
+   864→        {/* ═══════════════════ CONTACT ═══════════════════ */}
+   865→        <section id="contact" className="py-20 sm:py-28 bg-white">
+   866→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   867→            <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
+   868→              {/* Left: info */}
+   869→              <div className="lg:col-span-2">
+   870→                <FadeIn>
+   871→                  <SectionLabel>{contact.label}</SectionLabel>
+   872→                  <SectionHeading className="mb-4">{contact.title}</SectionHeading>
+   873→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-10">
+   874→                    {contact.subtitle}
+   875→                  </p>
+   876→                </FadeIn>
+   877→
+   878→                <FadeIn delay={0.15}>
+   879→                  <div className="flex flex-col gap-3">
+   880→                    <Button
+   881→                      asChild
+   882→                      variant="outline"
+   883→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   884→                    >
+   885→                      <a
+   886→                        href={siteSettings.telegram}
+   887→                        target="_blank"
+   888→                        rel="noopener noreferrer"
+   889→                      >
+   890→                        <MessageCircle size={19} className="text-red-700" />
+   891→                        Telegram
+   892→                      </a>
+   893→                    </Button>
+   894→                    <Button
+   895→                      asChild
+   896→                      variant="outline"
+   897→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   898→                    >
+   899→                      <a href={siteSettings.maxUrl} target="_blank" rel="noopener noreferrer">
+   900→                        <MessageCircle size={19} className="text-red-700" />
+   901→                        Макс
+   902→                      </a>
+   903→                    </Button>
+   904→                    <Button
+   905→                      onClick={() => setCallbackOpen(true)}
+   906→                      className="h-12 justify-start gap-3 text-[14px] font-medium bg-red-700 hover:bg-red-800 text-white rounded-lg"
+   907→                    >
+   908→                      <PhoneCall size={19} />
+   909→                      {contact.callbackButton}
+   910→                    </Button>
+   911→                  </div>
+   912→                </FadeIn>
+   913→
+   914→                {/* Contact info below messenger buttons */}
+   915→                <FadeIn delay={0.25}>
+   916→                  <div className="mt-10 space-y-4">
+   917→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   918→                      <Phone size={16} className="text-red-700/70 flex-shrink-0" />
+   919→                      <a href={"tel:" + siteSettings.phoneRaw} className="hover:text-red-700 transition-colors">{siteSettings.phone}</a>
+   920→                    </div>
+   921→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   922→                      <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
+   923→                      <span>{siteSettings.address}</span>
+   924→                    </div>
+   925→                  </div>
+   926→                </FadeIn>
+   927→              </div>
+   928→
+   929→              {/* Right: form */}
+   930→              <FadeIn delay={0.1} className="lg:col-span-3">
+   931→                <form
+   932→                  onSubmit={handleSubmit}
+   933→                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
+   934→                >
+   935→                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
+   936→                    <div className="space-y-2">
+   937→                      <Label htmlFor="name" className="text-xs font-medium">
+   938→                        {contact.name} *
+   939→                      </Label>
+   940→                      <Input
+   941→                        id="name"
+   942→                        value={formData.name}
+   943→                        onChange={(e) =>
+   944→                          setFormData((p) => ({ ...p, name: e.target.value }))
+   945→                        }
+   946→                        placeholder={contact.name}
+   947→                        required
+   948→                        className="h-11"
+   949→                      />
+   950→                    </div>
+   951→                    <div className="space-y-2">
+   952→                      <Label htmlFor="phone" className="text-xs font-medium">
+   953→                        {contact.phone} *
+   954→                      </Label>
+   955→                      <Input
+   956→                        id="phone"
+   957→                        type="tel"
+   958→                        value={formData.phone}
+   959→                        onChange={(e) =>
+   960→                          setFormData((p) => ({ ...p, phone: e.target.value }))
+   961→                        }
+   962→                        placeholder={contact.phone}
+   963→                        required
+   964→                        className="h-11"
+   965→                      />
+   966→                    </div>
+   967→                  </div>
+   968→
+   969→                  <div className="space-y-2 mb-5">
+   970→                    <Label className="text-xs font-medium">
+   971→                      {contact.serviceType}
+   972→                    </Label>
+   973→                    <Select
+   974→                      value={formData.serviceType}
+   975→                      onValueChange={(v) =>
+   976→                        setFormData((p) => ({ ...p, serviceType: v }))
+   977→                      }
+   978→                    >
+   979→                      <SelectTrigger className="w-full h-11">
+   980→                        <SelectValue placeholder={contact.serviceType} />
+   981→                      </SelectTrigger>
+   982→                      <SelectContent>
+   983→                        {contact.serviceTypes.map((type) => (
+   984→                          <SelectItem key={type} value={type}>
+   985→                            {type}
+   986→                          </SelectItem>
+   987→                        ))}
+   988→                      </SelectContent>
+   989→                    </Select>
+   990→                  </div>
+   991→
+   992→                  <div className="space-y-2 mb-6">
+   993→                    <Label htmlFor="comment" className="text-xs font-medium">
+   994→                      {contact.comment}
+   995→                    </Label>
+   996→                    <Textarea
+   997→                      id="comment"
+   998→                      value={formData.comment}
+   999→                      onChange={(e) =>
+  1000→                        setFormData((p) => ({ ...p, comment: e.target.value }))
+  1001→                      }
+  1002→                      placeholder={contact.commentPlaceholder}
+  1003→                      rows={4}
+  1004→                      className="resize-none"
+  1005→                    />
+  1006→                  </div>
+  1007→
+  1008→                  <Button
+  1009→                    type="submit"
+  1010→                    disabled={loading}
+  1011→                    className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
+  1012→                  >
+  1013→                    {loading ? (
+  1014→                      <span className="flex items-center gap-2">
+  1015→                        <svg
+  1016→                          className="animate-spin h-4 w-4"
+  1017→                          viewBox="0 0 24 24"
+  1018→                          fill="none"
+  1019→                        >
+  1020→                          <circle
+  1021→                            className="opacity-25"
+  1022→                            cx="12"
+  1023→                            cy="12"
+  1024→                            r="10"
+  1025→                            stroke="currentColor"
+  1026→                            strokeWidth="4"
+  1027→                          />
+  1028→                          <path
+  1029→                            className="opacity-75"
+  1030→                            fill="currentColor"
+  1031→                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+  1032→                          />
+  1033→                        </svg>
+  1034→                        {contact.submit}
+  1035→                      </span>
+  1036→                    ) : (
+  1037→                      <span className="flex items-center gap-2">
+  1038→                        <Send size={16} />
+  1039→                        {contact.submit}
+  1040→                      </span>
+  1041→                    )}
+  1042→                  </Button>
+  1043→                </form>
+  1044→              </FadeIn>
+  1045→            </div>
+  1046→          </div>
+  1047→        </section>
+  1048→      </main>
+  1049→
+  1050→      {/* ═══════════════════ FOOTER ═══════════════════ */}
+  1051→      <footer className="bg-[#0A0A0A] text-white mt-auto">
+  1052→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  1053→          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
+  1054→            {/* Contacts */}
+  1055→            <div>
+  1056→              <p className="text-sm font-semibold tracking-tight mb-6">
+  1057→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+  1058→              </p>
+  1059→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+  1060→                {footer.contacts}
+  1061→              </h3>
+  1062→              <div className="space-y-3">
+  1063→                <a
+  1064→                  href={"tel:" + siteSettings.phoneRaw}
+  1065→                  className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
+  1066→                >
+  1067→                  <Phone size={15} className="text-red-500/80 flex-shrink-0" />
+  1068→                  {siteSettings.phone}
+  1069→                </a>
+  1070→                <div className="flex items-center gap-3 text-white/60 text-sm">
+  1071→                  <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
+  1072→                  {siteSettings.address}
+  1073→                </div>
+  1074→              </div>
+  1075→            </div>
+  1076→
+  1077→            {/* Quick links */}
+  1078→            <div>
+  1079→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+  1080→                {footer.quickLinks}
+  1081→              </h3>
+  1082→              <nav className="flex flex-col gap-3">
+  1083→                {navLinks.map((l) => (
+  1084→                  <button
+  1085→                    key={l.id}
+  1086→                    onClick={() => scrollTo(l.id)}
+  1087→                    className="text-left text-white/50 hover:text-white transition-colors text-sm"
+  1088→                  >
+  1089→                    {l.label}
+  1090→                  </button>
+  1091→                ))}
+  1092→              </nav>
+  1093→            </div>
+  1094→
+  1095→            {/* Social */}
+  1096→            <div>
+  1097→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+  1098→                {footer.followMe}
+  1099→              </h3>
+  1100→              <div className="flex flex-col gap-3">
+  1101→                <a
+  1102→                  href={siteSettings.telegram}
+  1103→                  target="_blank"
+  1104→                  rel="noopener noreferrer"
+  1105→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+  1106→                >
+  1107→                  <MessageCircle size={15} className="flex-shrink-0" />
+  1108→                  {footer.telegram}
+  1109→                </a>
+  1110→                <a
+  1111→                  href={siteSettings.vk}
+  1112→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+  1113→                >
+  1114→                  <Globe size={15} className="flex-shrink-0" />
+  1115→                  {footer.vk}
+  1116→                </a>
+  1117→              </div>
+  1118→            </div>
+  1119→          </div>
+  1120→        </div>
+  1121→
+  1122→        {/* Bottom bar */}
+  1123→        <div className="border-t border-white/[0.06]">
+  1124→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+  1125→            <p className="text-white/40 text-xs">
+  1126→              &copy; 2025 {hero.name}. {footer.rights}
+  1127→            </p>
+  1128→            <p className="text-white/40 text-xs">{footer.madeIn}</p>
+  1129→          </div>
+  1130→        </div>
+  1131→      </footer>
+  1132→
+  1133→      {/* ═══════════════════ FLOATING BUTTONS ═══════════════════ */}
+  1134→      <TooltipProvider delayDuration={300}>
+  1135→        <div
+  1136→          className={`fixed bottom-6 right-6 z-40 flex flex-col gap-3 transition-all duration-300 ${
+  1137→            floatingVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+  1138→          }`}
+  1139→        >
+  1140→          {/* Back to top button */}
+  1141→          {scrolled && (
+  1142→            <Tooltip>
+  1143→              <TooltipTrigger asChild>
+  1144→                <button
+  1145→                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+  1146→                  className="w-11 h-11 sm:w-12 sm:h-12 bg-white border border-gray-200 hover:border-red-200 text-foreground hover:text-red-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+  1147→                  aria-label="Наверх"
+  1148→                >
+  1149→                  <ArrowUp size={18} />
+  1150→                </button>
+  1151→              </TooltipTrigger>
+  1152→              <TooltipContent side="left" className="text-xs font-medium">
+  1153→                {locale === "ru" ? "Наверх" : "Back to top"}
+  1154→              </TooltipContent>
+  1155→            </Tooltip>
+  1156→          )}
+  1157→
+  1158→          <Tooltip>
+  1159→            <TooltipTrigger asChild>
+  1160→              <a
+  1161→                href={siteSettings.telegram}
+  1162→                target="_blank"
+  1163→                rel="noopener noreferrer"
+  1164→                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#229ED9] hover:bg-[#1a8bc4] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+  1165→                aria-label={floating.telegram}
+  1166→              >
+  1167→                <Send size={22} className="sm:w-5 sm:h-5" />
+  1168→              </a>
+  1169→            </TooltipTrigger>
+  1170→            <TooltipContent side="left" className="text-xs font-medium">
+  1171→              {floating.telegram}
+  1172→            </TooltipContent>
+  1173→          </Tooltip>
+  1174→
+  1175→          <Tooltip>
+  1176→            <TooltipTrigger asChild>
+  1177→              <a
+  1178→                href={siteSettings.maxUrl}
+  1179→                target="_blank"
+  1180→                rel="noopener noreferrer"
+  1181→                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#1a1a1a] hover:bg-[#333] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+  1182→                aria-label={floating.max}
+  1183→              >
+  1184→                <MessageCircle size={22} className="sm:w-5 sm:h-5" />
+  1185→              </a>
+  1186→            </TooltipTrigger>
+  1187→            <TooltipContent side="left" className="text-xs font-medium">
+  1188→              {floating.max}
+  1189→            </TooltipContent>
+  1190→          </Tooltip>
+  1191→        </div>
+  1192→      </TooltipProvider>
+  1193→
+  1194→      {/* ═══════════════════ CALLBACK DIALOG ═══════════════════ */}
+  1195→      <Dialog open={callbackOpen} onOpenChange={setCallbackOpen}>
+  1196→        <DialogContent className="sm:max-w-md">
+  1197→          <DialogHeader>
+  1198→            <DialogTitle className="text-xl font-bold">{contact.callbackTitle}</DialogTitle>
+  1199→            <DialogDescription className="text-muted-foreground text-sm">
+  1200→              {contact.callbackDescription}
+  1201→            </DialogDescription>
+  1202→          </DialogHeader>
+  1203→          <form onSubmit={handleCallbackSubmit} className="space-y-4 mt-2">
+  1204→            <div className="space-y-2">
+  1205→              <Label htmlFor="cb-name" className="text-xs font-medium">{contact.name} *</Label>
+  1206→              <Input
+  1207→                id="cb-name"
+  1208→                value={callbackForm.name}
+  1209→                onChange={(e) => setCallbackForm((p) => ({ ...p, name: e.target.value }))}
+  1210→                placeholder={contact.name}
+  1211→                required
+  1212→                className="h-11"
+  1213→              />
+  1214→            </div>
+  1215→            <div className="space-y-2">
+  1216→              <Label htmlFor="cb-phone" className="text-xs font-medium">{contact.phone} *</Label>
+  1217→              <Input
+  1218→                id="cb-phone"
+  1219→                type="tel"
+  1220→                value={callbackForm.phone}
+  1221→                onChange={(e) => setCallbackForm((p) => ({ ...p, phone: e.target.value }))}
+  1222→                placeholder={contact.phone}
+  1223→                required
+  1224→                className="h-11"
+  1225→              />
+  1226→            </div>
+  1227→            <Button
+  1228→              type="submit"
+  1229→              disabled={callbackLoading}
+  1230→              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+  1231→            >
+  1232→              {callbackLoading ? (
+  1233→                <span className="flex items-center gap-2">
+  1234→                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+  1235→                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+  1236→                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  1237→                  </svg>
+  1238→                  {contact.callbackSubmit}
+  1239→                </span>
+  1240→              ) : (
+  1241→                <span className="flex items-center gap-2">
+  1242→                  <PhoneCall size={16} />
+  1243→                  {contact.callbackSubmit}
+  1244→                </span>
+  1245→              )}
+  1246→            </Button>
+  1247→          </form>
+  1248→        </DialogContent>
+  1249→      </Dialog>
+  1250→
+  1251→      {/* ═══════════════════ EXIT INTENT DIALOG ═══════════════════ */}
+  1252→      <Dialog open={exitIntentOpen} onOpenChange={setExitIntentOpen}>
+  1253→        <DialogContent className="sm:max-w-md">
+  1254→          <DialogHeader>
+  1255→            <DialogTitle className="text-2xl font-bold text-red-700">{exitIntent.title}</DialogTitle>
+  1256→            <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
+  1257→              {exitIntent.description}
+  1258→            </DialogDescription>
+  1259→          </DialogHeader>
+  1260→          <form onSubmit={handleExitIntentSubmit} className="space-y-4 mt-2">
+  1261→            <div className="space-y-2">
+  1262→              <Label htmlFor="ei-name" className="text-xs font-medium">{exitIntent.name} *</Label>
+  1263→              <Input
+  1264→                id="ei-name"
+  1265→                value={exitIntentForm.name}
+  1266→                onChange={(e) => setExitIntentForm((p) => ({ ...p, name: e.target.value }))}
+  1267→                placeholder={exitIntent.name}
+  1268→                required
+  1269→                className="h-11"
+  1270→              />
+  1271→            </div>
+  1272→            <div className="space-y-2">
+  1273→              <Label htmlFor="ei-phone" className="text-xs font-medium">{exitIntent.phone} *</Label>
+  1274→              <Input
+  1275→                id="ei-phone"
+  1276→                type="tel"
+  1277→                value={exitIntentForm.phone}
+  1278→                onChange={(e) => setExitIntentForm((p) => ({ ...p, phone: e.target.value }))}
+  1279→                placeholder={exitIntent.phone}
+  1280→                required
+  1281→                className="h-11"
+  1282→              />
+  1283→            </div>
+  1284→            <Button
+  1285→              type="submit"
+  1286→              disabled={exitIntentLoading}
+  1287→              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+  1288→            >
+  1289→              {exitIntentLoading ? (
+  1290→                <span className="flex items-center gap-2">
+  1291→                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+  1292→                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+  1293→                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  1294→                  </svg>
+  1295→                  {exitIntent.submit}
+  1296→                </span>
+  1297→              ) : (
+  1298→                <span className="flex items-center gap-2">
+  1299→                  <Send size={16} />
+  1300→                  {exitIntent.submit}
+  1301→                </span>
+  1302→              )}
+  1303→            </Button>
+  1304→          </form>
+  1305→        </DialogContent>
+  1306→      </Dialog>
+  1307→    </div>
+  1308→  );
+  1309→}

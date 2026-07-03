@@ -13,6 +13,7 @@ const PUBLIC_KEYS = [
   "phone",
   "address",
   "yandex_metrika_id",
+  "show_reviews",
 ];
 
 export async function GET() {

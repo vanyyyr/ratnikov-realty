@@ -235,7 +235,11 @@ export default function Home() {
     phone: "+7 (989) 246-77-98",
     address: "Офис: ул. Комсомола, 41",
     metrikaId: "",
+    showReviews: true,
   });
+  const [dbReviews, setDbReviews] = useState<
+    { id: string; name: string; text: string; rating: number; source: string | null; createdAt: string }[]
+  >([]);
 
   /* load public settings */
   useEffect(() => {
@@ -254,8 +258,10 @@ export default function Home() {
           phone: s.phone ? formatPhone(s.phone) : prev.phone,
           address: s.address ? "Офис: " + s.address : prev.address,
           metrikaId: s.yandex_metrika_id || prev.metrikaId,
+          showReviews: s.show_reviews !== "false",
         }));
 
+        // Yandex Metrika
         if (s.yandex_metrika_id) {
           if (!document.getElementById("yandex-metrika")) {
             const script = document.createElement("script");
@@ -269,6 +275,14 @@ export default function Home() {
             document.head.appendChild(script);
           }
         }
+      })
+      .catch(() => {});
+
+    // Load reviews
+    fetch("/api/reviews")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setDbReviews(data);
       })
       .catch(() => {});
   }, []);
@@ -446,7 +460,7 @@ export default function Home() {
   const navLinks = [
     { label: nav.about, id: "about" },
     { label: nav.services, id: "services" },
-    { label: nav.reviews, id: "reviews" },
+    ...(siteSettings.showReviews ? [{ label: nav.reviews, id: "reviews" }] : []),
     { label: nav.contact, id: "contact" },
   ];
 
@@ -803,6 +817,7 @@ export default function Home() {
         </section>
 
         {/* ═══════════════════ REVIEWS ═══════════════════ */}
+        {siteSettings.showReviews && (
         <section id="reviews" className="py-20 sm:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn className="text-center mb-14 sm:mb-16">
@@ -810,27 +825,74 @@ export default function Home() {
               <SectionHeading>{reviews.title}</SectionHeading>
             </FadeIn>
 
-            <FadeIn>
-              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
-                  <Quote size={28} className="text-red-700/40" />
-                </div>
-                <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
-                  {reviews.placeholder}
-                </p>
-                <div className="flex items-center justify-center gap-1.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      size={18}
-                      className="text-gray-200 fill-gray-200"
-                    />
-                  ))}
-                </div>
+            {dbReviews.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {dbReviews.map((r, idx) => (
+                  <FadeIn key={r.id} delay={idx * 0.08}>
+                    <Card className="bg-gray-50 border-gray-200/60 hover:shadow-md transition-shadow h-full">
+                      <CardContent className="p-6 flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-1.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                size={15}
+                                className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"}
+                              />
+                            ))}
+                          </div>
+                          <Quote size={18} className="text-red-200" />
+                        </div>
+                        <p className="text-sm text-foreground/80 leading-relaxed flex-1 mb-5">
+                          &ldquo;{r.text}&rdquo;
+                        </p>
+                        <div className="flex items-center gap-3 pt-3 border-t border-gray-200/60">
+                          <div className="w-9 h-9 bg-red-700 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">
+                              {r.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">
+                              {r.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(r.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", {
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </FadeIn>
+                ))}
               </div>
-            </FadeIn>
+            ) : (
+              <FadeIn>
+                <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+                    <Quote size={28} className="text-red-700/40" />
+                  </div>
+                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+                    {reviews.placeholder}
+                  </p>
+                  <div className="flex items-center justify-center gap-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        size={18}
+                        className="text-gray-200 fill-gray-200"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </FadeIn>
+            )}
           </div>
         </section>
+        )}
 
         {/* ═══════════════════ FAQ ═══════════════════ */}
         <section id="faq" className="py-20 sm:py-28 bg-gray-50">

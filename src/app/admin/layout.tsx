@@ -23,6 +23,7 @@ import {
   BarChart3,
   Settings,
   MessageSquare,
+  Star,
   LogOut,
   ExternalLink,
   Menu,
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { href: "/admin/tasks", label: "Задачи", icon: CheckSquare },
   { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/admin/templates", label: "Шаблоны", icon: MessageSquare },
+  { href: "/admin/reviews", label: "Отзывы", icon: Star },
   { href: "/admin/settings", label: "Настройки", icon: Settings },
 ];
 
@@ -50,6 +52,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/tasks": "Задачи",
   "/admin/analytics": "Аналитика",
   "/admin/templates": "Шаблоны",
+  "/admin/reviews": "Отзывы",
   "/admin/settings": "Настройки",
 };
 

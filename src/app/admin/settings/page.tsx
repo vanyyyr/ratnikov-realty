@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import {
   MessageCircle,
   Send,
@@ -17,6 +18,8 @@ import {
   Building2,
   Save,
   CheckCircle,
+  Star,
+  Phone,
 } from "lucide-react";
 
 type Settings = Record<string, string>;
@@ -309,6 +312,39 @@ export default function SettingsPage() {
           </Card>
         );
       })}
+
+      {/* Reviews toggle section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+              <Star className="w-4 h-4 text-red-700" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-base">Раздел отзывов</CardTitle>
+              <CardDescription className="text-xs">
+                Показывать или скрывать блок отзывов на сайте
+              </CardDescription>
+            </div>
+            <Switch
+              checked={settings.show_reviews !== "false"}
+              onCheckedChange={async (checked) => {
+                updateSetting("show_reviews", checked ? "true" : "false");
+                try {
+                  await fetch("/api/admin/settings", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ show_reviews: checked ? "true" : "false" }),
+                  });
+                  toast.success(checked ? "Отзывы показываются" : "Отзывы скрыты");
+                } catch {
+                  toast.error("Ошибка сохранения");
+                }
+              }}
+            />
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Security section */}
       <Card>

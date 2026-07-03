@@ -106,3 +106,15 @@ model MessageTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Review {
+  id        String   @id @default(cuid())
+  name      String
+  text      String
+  rating    Int      @default(5) // 1-5
+  source    String?  // cian, google, yandex, manual
+  isHidden  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

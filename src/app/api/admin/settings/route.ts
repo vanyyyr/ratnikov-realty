@@ -16,6 +16,7 @@ const SETTINGS_KEYS = [
   "phone",
   "address",
   "max_profile_url",
+  "show_reviews",
 ];
 
 export async function GET() {
