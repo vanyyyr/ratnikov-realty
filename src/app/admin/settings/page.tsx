@@ -79,6 +79,25 @@ const SECTIONS: SettingsSection[] = [
       { key: "cian_profile_url", label: "URL профиля", placeholder: "https://cian.ru/user/..." },
     ],
   },
+  {
+    key: "contact",
+    title: "Контакты",
+    description: "Телефон и адрес офиса для отображения на сайте",
+    icon: Phone,
+    fields: [
+      { key: "phone", label: "Телефон", placeholder: "+79892467798" },
+      { key: "address", label: "Адрес офиса", placeholder: "ул. Комсомола, 41" },
+    ],
+  },
+  {
+    key: "max_profile",
+    title: "Профиль Max",
+    description: "Ссылка на ваш профиль в Max",
+    icon: MessageCircle,
+    fields: [
+      { key: "max_profile_url", label: "Профиль Max", placeholder: "https://max.ru/..." },
+    ],
+  },
 ];
 
 export default function SettingsPage() {

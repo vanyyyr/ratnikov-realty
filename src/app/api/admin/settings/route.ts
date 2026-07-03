@@ -13,6 +13,9 @@ const SETTINGS_KEYS = [
   "social_whatsapp",
   "yandex_metrika_id",
   "cian_profile_url",
+  "phone",
+  "address",
+  "max_profile_url",
 ];
 
 export async function GET() {

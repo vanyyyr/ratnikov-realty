@@ -54,6 +54,7 @@ import {
   MapPin,
   Send,
   ArrowRight,
+  ArrowUp,
   ExternalLink,
   Quote,
   Star,
@@ -62,6 +63,41 @@ import {
 } from "lucide-react";
 
 /* ──────────────────────────── helpers ──────────────────────────── */
+
+function formatPhone(raw: string): string {
+  const d = raw.replace(/\D/g, "");
+  if (d.length === 11) {
+    return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
+  }
+  return raw;
+}
+
+function useCountUp(target: string, visible: boolean) {
+  const [display, setDisplay] = useState("0");
+  useEffect(() => {
+    if (!visible) return;
+    const numMatch = target.match(/[\d.]+/);
+    if (!numMatch) {
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      requestAnimationFrame(() => setDisplay(target));
+      return;
+    }
+    const num = parseFloat(numMatch[0]);
+    const suffix = target.replace(numMatch[0], "");
+    const duration = 1500;
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = num * eased;
+      setDisplay(Number.isInteger(num) ? Math.round(current) + suffix : current.toFixed(1) + suffix);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [visible, target]);
+  return display;
+}
 
 function FadeIn({
   children,
@@ -97,8 +133,9 @@ function FadeIn({
       className={className}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(24px)",
-        transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
+        transform: visible ? "translateY(0) scale(1)" : "translateY(30px) scale(0.98)",
+        filter: visible ? "blur(0)" : "blur(4px)",
+        transition: `opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, filter 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
       }}
     >
       {children}
@@ -108,7 +145,8 @@ function FadeIn({
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+    <span className="inline-flex flex-col items-center sm:items-start text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+      <span className="block w-8 h-0.5 bg-red-700 mb-3" />
       {children}
     </span>
   );
@@ -127,6 +165,32 @@ function SectionHeading({
     >
       {children}
     </h2>
+  );
+}
+
+function StatItem({ value, label }: { value: string; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.3 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  const display = useCountUp(value, visible);
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
+        {display}
+      </div>
+      <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+        {label}
+      </div>
+    </div>
   );
 }
 
@@ -158,14 +222,53 @@ export default function Home() {
     comment: "",
   });
   const [loading, setLoading] = useState(false);
-  const [cianUrl, setCianUrl] = useState("https://cian.ru/cat.php?deal_type=sale&engine_version=extended");
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [heroParallax, setHeroParallax] = useState(0);
+  const [siteSettings, setSiteSettings] = useState({
+    cianUrl: "https://cian.ru/cat.php?deal_type=sale&engine_version=extended",
+    telegram: "https://t.me/ilyaratnikov",
+    maxUrl: "https://max.ru",
+    vk: "#",
+    instagram: "#",
+    whatsapp: "#",
+    phoneRaw: "+79892467798",
+    phone: "+7 (989) 246-77-98",
+    address: "Офис: ул. Комсомола, 41",
+    metrikaId: "",
+  });
 
   /* load public settings */
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
       .then((s) => {
-        if (s.cian_profile_url) setCianUrl(s.cian_profile_url);
+        setSiteSettings((prev) => ({
+          ...prev,
+          cianUrl: s.cian_profile_url || prev.cianUrl,
+          telegram: s.social_telegram || prev.telegram,
+          maxUrl: s.max_profile_url || prev.maxUrl,
+          vk: s.social_vk || prev.vk,
+          instagram: s.social_instagram || prev.instagram,
+          whatsapp: s.social_whatsapp || prev.whatsapp,
+          phoneRaw: s.phone || prev.phoneRaw,
+          phone: s.phone ? formatPhone(s.phone) : prev.phone,
+          address: s.address ? "Офис: " + s.address : prev.address,
+          metrikaId: s.yandex_metrika_id || prev.metrikaId,
+        }));
+
+        if (s.yandex_metrika_id) {
+          if (!document.getElementById("yandex-metrika")) {
+            const script = document.createElement("script");
+            script.id = "yandex-metrika";
+            script.innerHTML = `
+              (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+              m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+              (window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
+              ym(${s.yandex_metrika_id},"init",{clickmap:true,trackLinks:true,accurateTrackBounce:true});
+            `;
+            document.head.appendChild(script);
+          }
+        }
       })
       .catch(() => {});
   }, []);
@@ -193,6 +296,9 @@ export default function Home() {
           const currentScrollY = window.scrollY;
           setScrolled(currentScrollY > 60);
           setFloatingVisible(currentScrollY < lastScrollY || currentScrollY < 100);
+          const total = document.documentElement.scrollHeight - window.innerHeight;
+          setScrollProgress(total > 0 ? (currentScrollY / total) * 100 : 0);
+          setHeroParallax(currentScrollY * 0.3);
           lastScrollY = currentScrollY;
           ticking = false;
         });
@@ -346,11 +452,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      {/* Scroll progress bar */}
+      <div
+        className="fixed top-0 left-0 h-[3px] bg-red-700 z-[60] transition-[width] duration-100"
+        style={{ width: `${scrollProgress}%` }}
+      />
+
       {/* ═══════════════════ NAVBAR ═══════════════════ */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)] animate-[slideDown_0.3s_ease-out]"
             : "bg-transparent"
         }`}
       >
@@ -479,8 +591,8 @@ export default function Home() {
           className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
         >
           {/* background layers */}
-          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" style={{ transform: `translateY(${heroParallax}px)` }} />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" style={{ transform: `translateY(${heroParallax}px)` }} />
 
           {/* thin red accent line at top */}
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
@@ -517,13 +629,13 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                     <Button
                       onClick={() => scrollTo("contact")}
-                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow"
+                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow btn-glow"
                     >
                       {hero.cta}
                       <ArrowRight size={17} />
                     </Button>
                     <a
-                      href={cianUrl}
+                      href={siteSettings.cianUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
@@ -615,7 +727,7 @@ export default function Home() {
                 const Icon = advIcons[i];
                 return (
                   <FadeIn key={i} delay={i * 0.1}>
-                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.06] hover:-translate-y-1 transition-all duration-300 py-0">
                       <CardContent className="p-6 sm:p-8">
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
@@ -655,7 +767,7 @@ export default function Home() {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
               {services.items.map((item, i) => (
-                <FadeIn key={i} delay={i * 0.1}>
+                <FadeIn key={i} delay={i * 0.12}>
                   <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
                     <CardContent className="p-6 sm:p-8 flex flex-col h-full">
                       <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
@@ -682,13 +794,8 @@ export default function Home() {
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
               {stats.items.map((item, i) => (
-                <FadeIn key={i} delay={i * 0.1} className="text-center">
-                  <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
-                    {item.value}
-                  </div>
-                  <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
-                    {item.label}
-                  </div>
+                <FadeIn key={i} delay={i * 0.1}>
+                  <StatItem value={item.value} label={item.label} />
                 </FadeIn>
               ))}
             </div>
@@ -776,7 +883,7 @@ export default function Home() {
                       className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
                     >
                       <a
-                        href="https://t.me/ilyaratnikov"
+                        href={siteSettings.telegram}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -789,7 +896,7 @@ export default function Home() {
                       variant="outline"
                       className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
                     >
-                      <a href="https://max.ru" target="_blank" rel="noopener noreferrer">
+                      <a href={siteSettings.maxUrl} target="_blank" rel="noopener noreferrer">
                         <MessageCircle size={19} className="text-red-700" />
                         Макс
                       </a>
@@ -809,11 +916,11 @@ export default function Home() {
                   <div className="mt-10 space-y-4">
                     <div className="flex items-center gap-3 text-muted-foreground text-sm">
                       <Phone size={16} className="text-red-700/70 flex-shrink-0" />
-                      <a href="tel:+79892467798" className="hover:text-red-700 transition-colors">+7 (989) 246-77-98</a>
+                      <a href={"tel:" + siteSettings.phoneRaw} className="hover:text-red-700 transition-colors">{siteSettings.phone}</a>
                     </div>
                     <div className="flex items-center gap-3 text-muted-foreground text-sm">
                       <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
-                      <span>{footer.address}</span>
+                      <span>{siteSettings.address}</span>
                     </div>
                   </div>
                 </FadeIn>
@@ -954,15 +1061,15 @@ export default function Home() {
               </h3>
               <div className="space-y-3">
                 <a
-                  href="tel:+79892467798"
+                  href={"tel:" + siteSettings.phoneRaw}
                   className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
                 >
                   <Phone size={15} className="text-red-500/80 flex-shrink-0" />
-                  +7 (989) 246-77-98
+                  {siteSettings.phone}
                 </a>
                 <div className="flex items-center gap-3 text-white/60 text-sm">
                   <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
-                  {footer.address}
+                  {siteSettings.address}
                 </div>
               </div>
             </div>
@@ -992,7 +1099,7 @@ export default function Home() {
               </h3>
               <div className="flex flex-col gap-3">
                 <a
-                  href="https://t.me/ilyaratnikov"
+                  href={siteSettings.telegram}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
@@ -1001,7 +1108,7 @@ export default function Home() {
                   {footer.telegram}
                 </a>
                 <a
-                  href="#"
+                  href={siteSettings.vk}
                   className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
                 >
                   <Globe size={15} className="flex-shrink-0" />
@@ -1030,10 +1137,28 @@ export default function Home() {
             floatingVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
           }`}
         >
+          {/* Back to top button */}
+          {scrolled && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="w-11 h-11 sm:w-12 sm:h-12 bg-white border border-gray-200 hover:border-red-200 text-foreground hover:text-red-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+                  aria-label="Наверх"
+                >
+                  <ArrowUp size={18} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="text-xs font-medium">
+                {locale === "ru" ? "Наверх" : "Back to top"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <a
-                href="https://t.me/ilyaratnikov"
+                href={siteSettings.telegram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#229ED9] hover:bg-[#1a8bc4] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
@@ -1050,7 +1175,7 @@ export default function Home() {
           <Tooltip>
             <TooltipTrigger asChild>
               <a
-                href="https://max.ru"
+                href={siteSettings.maxUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#1a1a1a] hover:bg-[#333] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"

@@ -9,6 +9,9 @@ const PUBLIC_KEYS = [
   "social_vk",
   "social_instagram",
   "social_whatsapp",
+  "max_profile_url",
+  "phone",
+  "address",
   "yandex_metrika_id",
 ];
 

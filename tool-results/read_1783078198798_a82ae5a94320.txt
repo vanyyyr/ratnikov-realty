@@ -1,0 +1,1184 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
+     4→     4→import Image from "next/image";
+     5→     5→import { useI18n } from "@/lib/i18n-context";
+     6→     6→import { Button } from "@/components/ui/button";
+     7→     7→import { Input } from "@/components/ui/input";
+     8→     8→import { Textarea } from "@/components/ui/textarea";
+     9→     9→import { Label } from "@/components/ui/label";
+    10→    10→import { Card, CardContent } from "@/components/ui/card";
+    11→    11→import {
+    12→    12→  Select,
+    13→    13→  SelectContent,
+    14→    14→  SelectItem,
+    15→    15→  SelectTrigger,
+    16→    16→  SelectValue,
+    17→    17→} from "@/components/ui/select";
+    18→    18→import { toast } from "sonner";
+    19→    19→import { Badge } from "@/components/ui/badge";
+    20→    20→import {
+    21→    21→  Sheet,
+    22→    22→  SheetContent,
+    23→    23→  SheetTrigger,
+    24→    24→  SheetTitle,
+    25→    25→} from "@/components/ui/sheet";
+    26→    26→import {
+    27→    27→  Dialog,
+    28→    28→  DialogContent,
+    29→    29→  DialogHeader,
+    30→    30→  DialogTitle,
+    31→    31→  DialogDescription,
+    32→    32→} from "@/components/ui/dialog";
+    33→    33→import {
+    34→    34→  Accordion,
+    35→    35→  AccordionContent,
+    36→    36→  AccordionItem,
+    37→    37→  AccordionTrigger,
+    38→    38→} from "@/components/ui/accordion";
+    39→    39→import {
+    40→    40→  Tooltip,
+    41→    41→  TooltipContent,
+    42→    42→  TooltipProvider,
+    43→    43→  TooltipTrigger,
+    44→    44→} from "@/components/ui/tooltip";
+    45→    45→import {
+    46→    46→  Menu,
+    47→    47→  BarChart3,
+    48→    48→  ShieldCheck,
+    49→    49→  Megaphone,
+    50→    50→  Handshake,
+    51→    51→  MessageCircle,
+    52→    52→  ChevronDown,
+    53→    53→  Phone,
+    54→    54→  MapPin,
+    55→    55→  Send,
+    56→    56→  ArrowRight,
+    57→    57→  ExternalLink,
+    58→    58→  Quote,
+    59→    59→  Star,
+    60→    60→  Globe,
+    61→    61→  PhoneCall,
+    62→    62→} from "lucide-react";
+    63→    63→
+    64→    64→/* ──────────────────────────── helpers ──────────────────────────── */
+    65→    65→
+    66→    66→function FadeIn({
+    67→    67→  children,
+    68→    68→  className = "",
+    69→    69→  delay = 0,
+    70→    70→}: {
+    71→    71→  children: ReactNode;
+    72→    72→  className?: string;
+    73→    73→  delay?: number;
+    74→    74→}) {
+    75→    75→  const ref = useRef<HTMLDivElement>(null);
+    76→    76→  const [visible, setVisible] = useState(false);
+    77→    77→
+    78→    78→  useEffect(() => {
+    79→    79→    const el = ref.current;
+    80→    80→    if (!el) return;
+    81→    81→    const obs = new IntersectionObserver(
+    82→    82→      ([e]) => {
+    83→    83→        if (e.isIntersecting) {
+    84→    84→          setVisible(true);
+    85→    85→          obs.disconnect();
+    86→    86→        }
+    87→    87→      },
+    88→    88→      { threshold: 0.08 },
+    89→    89→    );
+    90→    90→    obs.observe(el);
+    91→    91→    return () => obs.disconnect();
+    92→    92→  }, []);
+    93→    93→
+    94→    94→  return (
+    95→    95→    <div
+    96→    96→      ref={ref}
+    97→    97→      className={className}
+    98→    98→      style={{
+    99→    99→        opacity: visible ? 1 : 0,
+   100→   100→        transform: visible ? "translateY(0)" : "translateY(24px)",
+   101→   101→        transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
+   102→   102→      }}
+   103→   103→    >
+   104→   104→      {children}
+   105→   105→    </div>
+   106→   106→  );
+   107→   107→}
+   108→   108→
+   109→   109→function SectionLabel({ children }: { children: ReactNode }) {
+   110→   110→  return (
+   111→   111→    <span className="inline-block text-xs font-semibold uppercase tracking-[0.2em] text-red-700 mb-4">
+   112→   112→      {children}
+   113→   113→    </span>
+   114→   114→  );
+   115→   115→}
+   116→   116→
+   117→   117→function SectionHeading({
+   118→   118→  children,
+   119→   119→  className = "",
+   120→   120→}: {
+   121→   121→  children: ReactNode;
+   122→   122→  className?: string;
+   123→   123→}) {
+   124→   124→  return (
+   125→   125→    <h2
+   126→   126→      className={`text-3xl sm:text-4xl font-bold text-foreground tracking-tight ${className}`}
+   127→   127→    >
+   128→   128→      {children}
+   129→   129→    </h2>
+   130→   130→  );
+   131→   131→}
+   132→   132→
+   133→   133→/* ──────────────────────────── page ──────────────────────────── */
+   134→   134→
+   135→   135→export default function Home() {
+   136→   136→  const { locale, setLocale, t } = useI18n();
+   137→   137→
+   138→   138→  const nav = t("nav");
+   139→   139→  const hero = t("hero");
+   140→   140→  const about = t("about");
+   141→   141→  const advantages = t("advantages");
+   142→   142→  const services = t("services");
+   143→   143→  const stats = t("stats");
+   144→   144→  const reviews = t("reviews");
+   145→   145→  const contact = t("contact");
+   146→   146→  const faq = t("faq");
+   147→   147→  const exitIntent = t("exitIntent");
+   148→   148→  const floating = t("floating");
+   149→   149→  const footer = t("footer");
+   150→   150→
+   151→   151→  /* state */
+   152→   152→  const [scrolled, setScrolled] = useState(false);
+   153→   153→  const [mobileOpen, setMobileOpen] = useState(false);
+   154→   154→  const [formData, setFormData] = useState({
+   155→   155→    name: "",
+   156→   156→    phone: "",
+   157→   157→    serviceType: "",
+   158→   158→    comment: "",
+   159→   159→  });
+   160→   160→  const [loading, setLoading] = useState(false);
+   161→   161→  const [cianUrl, setCianUrl] = useState("https://cian.ru/cat.php?deal_type=sale&engine_version=extended");
+   162→   162→
+   163→   163→  /* load public settings */
+   164→   164→  useEffect(() => {
+   165→   165→    fetch("/api/settings")
+   166→   166→      .then((r) => r.json())
+   167→   167→      .then((s) => {
+   168→   168→        if (s.cian_profile_url) setCianUrl(s.cian_profile_url);
+   169→   169→      })
+   170→   170→      .catch(() => {});
+   171→   171→  }, []);
+   172→   172→
+   173→   173→  // Callback dialog state
+   174→   174→  const [callbackOpen, setCallbackOpen] = useState(false);
+   175→   175→  const [callbackForm, setCallbackForm] = useState({ name: "", phone: "" });
+   176→   176→  const [callbackLoading, setCallbackLoading] = useState(false);
+   177→   177→
+   178→   178→  // Exit intent state
+   179→   179→  const [exitIntentOpen, setExitIntentOpen] = useState(false);
+   180→   180→  const [exitIntentForm, setExitIntentForm] = useState({ name: "", phone: "" });
+   181→   181→  const [exitIntentLoading, setExitIntentLoading] = useState(false);
+   182→   182→
+   183→   183→  // Floating buttons visibility (hide on scroll down, show on scroll up)
+   184→   184→  const [floatingVisible, setFloatingVisible] = useState(true);
+   185→   185→
+   186→   186→  /* scroll listener */
+   187→   187→  useEffect(() => {
+   188→   188→    let lastScrollY = window.scrollY;
+   189→   189→    let ticking = false;
+   190→   190→    const onScroll = () => {
+   191→   191→      if (!ticking) {
+   192→   192→        window.requestAnimationFrame(() => {
+   193→   193→          const currentScrollY = window.scrollY;
+   194→   194→          setScrolled(currentScrollY > 60);
+   195→   195→          setFloatingVisible(currentScrollY < lastScrollY || currentScrollY < 100);
+   196→   196→          lastScrollY = currentScrollY;
+   197→   197→          ticking = false;
+   198→   198→        });
+   199→   199→        ticking = true;
+   200→   200→      }
+   201→   201→    };
+   202→   202→    window.addEventListener("scroll", onScroll, { passive: true });
+   203→   203→    return () => window.removeEventListener("scroll", onScroll);
+   204→   204→  }, []);
+   205→   205→
+   206→   206→  const scrollTo = (id: string) => {
+   207→   207→    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+   208→   208→    setMobileOpen(false);
+   209→   209→  };
+   210→   210→
+   211→   211→  /* form */
+   212→   212→  const handleSubmit = async (e: FormEvent) => {
+   213→   213→    e.preventDefault();
+   214→   214→    if (!formData.name.trim() || !formData.phone.trim()) {
+   215→   215→      toast.error(contact.required);
+   216→   216→      return;
+   217→   217→    }
+   218→   218→    setLoading(true);
+   219→   219→    try {
+   220→   220→      const res = await fetch("/api/leads", {
+   221→   221→        method: "POST",
+   222→   222→        headers: { "Content-Type": "application/json" },
+   223→   223→        body: JSON.stringify({
+   224→   224→          name: formData.name,
+   225→   225→          phone: formData.phone,
+   226→   226→          serviceType: formData.serviceType || undefined,
+   227→   227→          comment: formData.comment || undefined,
+   228→   228→        }),
+   229→   229→      });
+   230→   230→      if (res.ok) {
+   231→   231→        const json = await res.json();
+   232→   232→        if (json.duplicate) {
+   233→   233→          toast.warning(contact.duplicateWarning);
+   234→   234→        } else {
+   235→   235→          toast.success(contact.success);
+   236→   236→        }
+   237→   237→        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
+   238→   238→      } else {
+   239→   239→        toast.error(contact.error);
+   240→   240→      }
+   241→   241→    } catch {
+   242→   242→      toast.error(contact.error);
+   243→   243→    } finally {
+   244→   244→      setLoading(false);
+   245→   245→    }
+   246→   246→  };
+   247→   247→
+   248→   248→  /* advantage icons */
+   249→   249→  const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
+   250→   250→
+   251→   251→  /* callback form handler */
+   252→   252→  const handleCallbackSubmit = useCallback(async (e: FormEvent) => {
+   253→   253→    e.preventDefault();
+   254→   254→    if (!callbackForm.name.trim() || !callbackForm.phone.trim()) {
+   255→   255→      toast.error(contact.required);
+   256→   256→      return;
+   257→   257→    }
+   258→   258→    setCallbackLoading(true);
+   259→   259→    try {
+   260→   260→      const res = await fetch("/api/leads", {
+   261→   261→        method: "POST",
+   262→   262→        headers: { "Content-Type": "application/json" },
+   263→   263→        body: JSON.stringify({
+   264→   264→          name: callbackForm.name,
+   265→   265→          phone: callbackForm.phone,
+   266→   266→          serviceType: locale === "ru" ? "Обратный звонок" : "Callback",
+   267→   267→        }),
+   268→   268→      });
+   269→   269→      if (res.ok) {
+   270→   270→        const json = await res.json();
+   271→   271→        if (json.duplicate) {
+   272→   272→          toast.warning(contact.duplicateWarning);
+   273→   273→        } else {
+   274→   274→          toast.success(contact.callbackSuccess);
+   275→   275→        }
+   276→   276→        setCallbackForm({ name: "", phone: "" });
+   277→   277→        setCallbackOpen(false);
+   278→   278→        sessionStorage.setItem("formSubmitted", "true");
+   279→   279→      } else {
+   280→   280→        toast.error(contact.error);
+   281→   281→      }
+   282→   282→    } catch {
+   283→   283→      toast.error(contact.error);
+   284→   284→    } finally {
+   285→   285→      setCallbackLoading(false);
+   286→   286→    }
+   287→   287→  }, [callbackForm, locale, contact]);
+   288→   288→
+   289→   289→  /* exit intent form handler */
+   290→   290→  const handleExitIntentSubmit = useCallback(async (e: FormEvent) => {
+   291→   291→    e.preventDefault();
+   292→   292→    if (!exitIntentForm.name.trim() || !exitIntentForm.phone.trim()) {
+   293→   293→      toast.error(contact.required);
+   294→   294→      return;
+   295→   295→    }
+   296→   296→    setExitIntentLoading(true);
+   297→   297→    try {
+   298→   298→      const res = await fetch("/api/leads", {
+   299→   299→        method: "POST",
+   300→   300→        headers: { "Content-Type": "application/json" },
+   301→   301→        body: JSON.stringify({
+   302→   302→          name: exitIntentForm.name,
+   303→   303→          phone: exitIntentForm.phone,
+   304→   304→          serviceType: "Exit Intent",
+   305→   305→        }),
+   306→   306→      });
+   307→   307→      if (res.ok) {
+   308→   308→        const json = await res.json();
+   309→   309→        if (json.duplicate) {
+   310→   310→          toast.warning(contact.duplicateWarning);
+   311→   311→        } else {
+   312→   312→          toast.success(exitIntent.success);
+   313→   313→        }
+   314→   314→        setExitIntentForm({ name: "", phone: "" });
+   315→   315→        setExitIntentOpen(false);
+   316→   316→        sessionStorage.setItem("formSubmitted", "true");
+   317→   317→      } else {
+   318→   318→        toast.error(contact.error);
+   319→   319→      }
+   320→   320→    } catch {
+   321→   321→      toast.error(contact.error);
+   322→   322→    } finally {
+   323→   323→      setExitIntentLoading(false);
+   324→   324→    }
+   325→   325→  }, [exitIntentForm, exitIntent, contact]);
+   326→   326→
+   327→   327→  /* exit intent listener */
+   328→   328→  useEffect(() => {
+   329→   329→    const handleMouseLeave = (e: MouseEvent) => {
+   330→   330→      if (e.clientY < 5 && !sessionStorage.getItem("exitIntentShown") && !sessionStorage.getItem("formSubmitted")) {
+   331→   331→        setExitIntentOpen(true);
+   332→   332→        sessionStorage.setItem("exitIntentShown", "true");
+   333→   333→      }
+   334→   334→    };
+   335→   335→    document.documentElement.addEventListener("mouseleave", handleMouseLeave);
+   336→   336→    return () => document.documentElement.removeEventListener("mouseleave", handleMouseLeave);
+   337→   337→  }, []);
+   338→   338→
+   339→   339→  /* nav links */
+   340→   340→  const navLinks = [
+   341→   341→    { label: nav.about, id: "about" },
+   342→   342→    { label: nav.services, id: "services" },
+   343→   343→    { label: nav.reviews, id: "reviews" },
+   344→   344→    { label: nav.contact, id: "contact" },
+   345→   345→  ];
+   346→   346→
+   347→   347→  return (
+   348→   348→    <div className="min-h-screen flex flex-col bg-white">
+   349→   349→      {/* ═══════════════════ NAVBAR ═══════════════════ */}
+   350→   350→      <header
+   351→   351→        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+   352→   352→          scrolled
+   353→   353→            ? "bg-white/95 backdrop-blur-lg shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+   354→   354→            : "bg-transparent"
+   355→   355→        }`}
+   356→   356→      >
+   357→   357→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+   358→   358→          {/* Logo */}
+   359→   359→          <button
+   360→   360→            onClick={() => scrollTo("hero")}
+   361→   361→            className="flex items-center select-none"
+   362→   362→          >
+   363→   363→            <span
+   364→   364→              className={`text-[14px] font-semibold tracking-tight transition-colors ${
+   365→   365→                scrolled ? "text-foreground" : "text-white"
+   366→   366→              }`}
+   367→   367→            >
+   368→   368→              {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   369→   369→            </span>
+   370→   370→          </button>
+   371→   371→
+   372→   372→          {/* Desktop nav links */}
+   373→   373→          <nav className="hidden lg:flex items-center gap-8">
+   374→   374→            {navLinks.map((l) => (
+   375→   375→              <button
+   376→   376→                key={l.id}
+   377→   377→                onClick={() => scrollTo(l.id)}
+   378→   378→                className={`text-[13px] font-medium transition-colors ${
+   379→   379→                  scrolled
+   380→   380→                    ? "text-foreground/70 hover:text-red-700"
+   381→   381→                    : "text-white/70 hover:text-white"
+   382→   382→                }`}
+   383→   383→              >
+   384→   384→                {l.label}
+   385→   385→              </button>
+   386→   386→            ))}
+   387→   387→          </nav>
+   388→   388→
+   389→   389→          {/* Desktop right side */}
+   390→   390→          <div className="hidden lg:flex items-center gap-3">
+   391→   391→            {/* Lang toggle */}
+   392→   392→            <div className="flex items-center bg-black/5 rounded-md p-[3px]">
+   393→   393→              {(["ru", "en"] as const).map((lng) => (
+   394→   394→                <button
+   395→   395→                  key={lng}
+   396→   396→                  onClick={() => setLocale(lng)}
+   397→   397→                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded-[5px] transition-all duration-200 ${
+   398→   398→                    locale === lng
+   399→   399→                      ? "bg-red-700 text-white shadow-sm"
+   400→   400→                      : scrolled
+   401→   401→                        ? "text-foreground/50 hover:text-foreground"
+   402→   402→                        : "text-white/50 hover:text-white"
+   403→   403→                  }`}
+   404→   404→                >
+   405→   405→                  {lng}
+   406→   406→                </button>
+   407→   407→              ))}
+   408→   408→            </div>
+   409→   409→
+   410→   410→            <Button
+   411→   411→              onClick={() => scrollTo("contact")}
+   412→   412→              className="bg-red-700 hover:bg-red-800 text-white h-9 px-5 text-[13px] font-medium rounded-md"
+   413→   413→              size="default"
+   414→   414→            >
+   415→   415→              {hero.cta}
+   416→   416→            </Button>
+   417→   417→          </div>
+   418→   418→
+   419→   419→          {/* Mobile hamburger */}
+   420→   420→          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+   421→   421→            <SheetTrigger asChild>
+   422→   422→              <button
+   423→   423→                className={`lg:hidden transition-colors ${
+   424→   424→                  scrolled ? "text-foreground" : "text-white"
+   425→   425→                }`}
+   426→   426→                aria-label="Menu"
+   427→   427→              >
+   428→   428→                <Menu size={24} />
+   429→   429→              </button>
+   430→   430→            </SheetTrigger>
+   431→   431→            <SheetContent side="right" className="w-[300px] pt-10">
+   432→   432→              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
+   433→   433→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   434→   434→              </SheetTitle>
+   435→   435→
+   436→   436→              <nav className="flex flex-col gap-1">
+   437→   437→                {navLinks.map((l) => (
+   438→   438→                  <button
+   439→   439→                    key={l.id}
+   440→   440→                    onClick={() => scrollTo(l.id)}
+   441→   441→                    className="text-left text-[15px] font-medium text-foreground/80 hover:text-red-700 transition-colors py-3 border-b border-border/50"
+   442→   442→                  >
+   443→   443→                    {l.label}
+   444→   444→                  </button>
+   445→   445→                ))}
+   446→   446→              </nav>
+   447→   447→
+   448→   448→              <div className="flex items-center bg-gray-100 rounded-md p-[3px] w-fit mt-8">
+   449→   449→                {(["ru", "en"] as const).map((lng) => (
+   450→   450→                  <button
+   451→   451→                    key={lng}
+   452→   452→                    onClick={() => setLocale(lng)}
+   453→   453→                    className={`px-3 py-1.5 text-[12px] font-bold uppercase rounded-[5px] transition-all ${
+   454→   454→                      locale === lng
+   455→   455→                        ? "bg-red-700 text-white"
+   456→   456→                        : "text-foreground/50"
+   457→   457→                    }`}
+   458→   458→                  >
+   459→   459→                    {lng}
+   460→   460→                  </button>
+   461→   461→                ))}
+   462→   462→              </div>
+   463→   463→
+   464→   464→              <Button
+   465→   465→                onClick={() => scrollTo("contact")}
+   466→   466→                className="bg-red-700 hover:bg-red-800 text-white w-full h-11 mt-6 text-[14px] font-medium"
+   467→   467→              >
+   468→   468→                {hero.cta}
+   469→   469→              </Button>
+   470→   470→            </SheetContent>
+   471→   471→          </Sheet>
+   472→   472→        </div>
+   473→   473→      </header>
+   474→   474→
+   475→   475→      <main className="flex-1">
+   476→   476→        {/* ═══════════════════ HERO ═══════════════════ */}
+   477→   477→        <section
+   478→   478→          id="hero"
+   479→   479→          className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
+   480→   480→        >
+   481→   481→          {/* background layers */}
+   482→   482→          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#0A0A0A] to-red-950/20" />
+   483→   483→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_50%,rgba(185,28,28,0.08),transparent)]" />
+   484→   484→
+   485→   485→          {/* thin red accent line at top */}
+   486→   486→          <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
+   487→   487→
+   488→   488→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
+   489→   489→            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+   490→   490→              {/* Text content */}
+   491→   491→              <div className="text-center lg:text-left order-2 lg:order-1">
+   492→   492→                <FadeIn>
+   493→   493→                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
+   494→   494→                    {hero.greeting}
+   495→   495→                  </p>
+   496→   496→                </FadeIn>
+   497→   497→
+   498→   498→                <FadeIn delay={0.1}>
+   499→   499→                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+   500→   500→                    {hero.name}
+   501→   501→                  </h1>
+   502→   502→                </FadeIn>
+   503→   503→
+   504→   504→                <FadeIn delay={0.2}>
+   505→   505→                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+   506→   506→                    {hero.title}
+   507→   507→                  </p>
+   508→   508→                </FadeIn>
+   509→   509→
+   510→   510→                <FadeIn delay={0.3}>
+   511→   511→                  <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+   512→   512→                    {hero.subtitle}
+   513→   513→                  </p>
+   514→   514→                </FadeIn>
+   515→   515→
+   516→   516→                <FadeIn delay={0.4}>
+   517→   517→                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+   518→   518→                    <Button
+   519→   519→                      onClick={() => scrollTo("contact")}
+   520→   520→                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow"
+   521→   521→                    >
+   522→   522→                      {hero.cta}
+   523→   523→                      <ArrowRight size={17} />
+   524→   524→                    </Button>
+   525→   525→                    <a
+   526→   526→                      href={cianUrl}
+   527→   527→                      target="_blank"
+   528→   528→                      rel="noopener noreferrer"
+   529→   529→                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
+   530→   530→                    >
+   531→   531→                      {hero.cian}
+   532→   532→                      <ExternalLink size={15} />
+   533→   533→                    </a>
+   534→   534→                  </div>
+   535→   535→                </FadeIn>
+   536→   536→              </div>
+   537→   537→
+   538→   538→              {/* Photo */}
+   539→   539→              <FadeIn delay={0.3} className="order-1 lg:order-2 flex justify-center lg:justify-end">
+   540→   540→                <div className="relative">
+   541→   541→                  <div className="absolute -left-2 top-6 bottom-6 w-[3px] bg-gradient-to-b from-red-700 via-red-600 to-red-800 rounded-full hidden sm:block" />
+   542→   542→                  <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10">
+   543→   543→                    <Image
+   544→   544→                      src="/hero-photo.jpg"
+   545→   545→                      alt={hero.name}
+   546→   546→                      width={380}
+   547→   547→                      height={507}
+   548→   548→                      className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
+   549→   549→                      priority
+   550→   550→                      fetchPriority="high"
+   551→   551→                    />
+   552→   552→                  </div>
+   553→   553→                  {/* Decorative corner */}
+   554→   554→                  <div className="absolute -bottom-3 -right-3 w-20 h-20 border-2 border-red-700/20 rounded-2xl -z-10 hidden sm:block" />
+   555→   555→                </div>
+   556→   556→              </FadeIn>
+   557→   557→            </div>
+   558→   558→          </div>
+   559→   559→
+   560→   560→          {/* Scroll indicator */}
+   561→   561→          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+   562→   562→            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
+   563→   563→              {hero.scroll}
+   564→   564→            </span>
+   565→   565→            <ChevronDown className="text-white/50 animate-bounce" size={18} />
+   566→   566→          </div>
+   567→   567→        </section>
+   568→   568→
+   569→   569→        {/* ═══════════════════ ABOUT ═══════════════════ */}
+   570→   570→        <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
+   571→   571→          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   572→   572→            <div>
+   573→   573→                <FadeIn>
+   574→   574→                  <SectionLabel>{about.label}</SectionLabel>
+   575→   575→                  <SectionHeading className="mb-6">{about.title}</SectionHeading>
+   576→   576→                </FadeIn>
+   577→   577→
+   578→   578→                <FadeIn delay={0.1}>
+   579→   579→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+   580→   580→                    {about.description}
+   581→   581→                  </p>
+   582→   582→                </FadeIn>
+   583→   583→
+   584→   584→                {/* Mission box */}
+   585→   585→                <FadeIn delay={0.2}>
+   586→   586→                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
+   587→   587→                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
+   588→   588→                      {about.mission}
+   589→   589→                    </h3>
+   590→   590→                    <p className="text-muted-foreground text-sm leading-relaxed">
+   591→   591→                      {about.missionText}
+   592→   592→                    </p>
+   593→   593→                  </div>
+   594→   594→                </FadeIn>
+   595→   595→
+   596→   596→                <FadeIn delay={0.3}>
+   597→   597→                  <Badge className="bg-red-700 text-white hover:bg-red-800 text-xs px-4 py-1.5 rounded-md font-medium">
+   598→   598→                    {about.partner}
+   599→   599→                  </Badge>
+   600→   600→                </FadeIn>
+   601→   601→              </div>
+   602→   602→            </div>
+   603→   603→        </section>
+   604→   604→
+   605→   605→        {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
+   606→   606→        <section className="py-20 sm:py-28 bg-gray-50">
+   607→   607→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   608→   608→            <FadeIn className="text-center mb-14 sm:mb-16">
+   609→   609→              <SectionLabel>{advantages.label}</SectionLabel>
+   610→   610→              <SectionHeading>{advantages.title}</SectionHeading>
+   611→   611→            </FadeIn>
+   612→   612→
+   613→   613→            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+   614→   614→              {advantages.items.map((item, i) => {
+   615→   615→                const Icon = advIcons[i];
+   616→   616→                return (
+   617→   617→                  <FadeIn key={i} delay={i * 0.1}>
+   618→   618→                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   619→   619→                      <CardContent className="p-6 sm:p-8">
+   620→   620→                        <div className="flex items-start gap-4">
+   621→   621→                          <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
+   622→   622→                            <Icon
+   623→   623→                              size={21}
+   624→   624→                              className="text-red-700 group-hover:text-white transition-colors duration-300"
+   625→   625→                            />
+   626→   626→                          </div>
+   627→   627→                          <div className="min-w-0">
+   628→   628→                            <h3 className="text-[15px] sm:text-base font-semibold text-foreground mb-2 leading-snug">
+   629→   629→                              {item.title}
+   630→   630→                            </h3>
+   631→   631→                            <p className="text-muted-foreground text-sm leading-relaxed">
+   632→   632→                              {item.text}
+   633→   633→                            </p>
+   634→   634→                          </div>
+   635→   635→                        </div>
+   636→   636→                      </CardContent>
+   637→   637→                    </Card>
+   638→   638→                  </FadeIn>
+   639→   639→                );
+   640→   640→              })}
+   641→   641→            </div>
+   642→   642→          </div>
+   643→   643→        </section>
+   644→   644→
+   645→   645→        {/* ═══════════════════ SERVICES ═══════════════════ */}
+   646→   646→        <section id="services" className="py-20 sm:py-28 bg-white">
+   647→   647→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   648→   648→            <FadeIn className="text-center mb-14 sm:mb-16">
+   649→   649→              <SectionLabel>{services.label}</SectionLabel>
+   650→   650→              <SectionHeading className="mb-4">{services.title}</SectionHeading>
+   651→   651→              <p className="text-muted-foreground text-[15px] sm:text-base max-w-2xl mx-auto leading-relaxed">
+   652→   652→                {services.subtitle}
+   653→   653→              </p>
+   654→   654→            </FadeIn>
+   655→   655→
+   656→   656→            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+   657→   657→              {services.items.map((item, i) => (
+   658→   658→                <FadeIn key={i} delay={i * 0.1}>
+   659→   659→                  <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
+   660→   660→                    <CardContent className="p-6 sm:p-8 flex flex-col h-full">
+   661→   661→                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
+   662→   662→                        {String(i + 1).padStart(2, "0")}
+   663→   663→                      </span>
+   664→   664→                      <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
+   665→   665→                        {item.title}
+   666→   666→                      </h3>
+   667→   667→                      <p className="text-muted-foreground text-sm leading-relaxed flex-1">
+   668→   668→                        {item.text}
+   669→   669→                      </p>
+   670→   670→                    </CardContent>
+   671→   671→                  </Card>
+   672→   672→                </FadeIn>
+   673→   673→              ))}
+   674→   674→            </div>
+   675→   675→          </div>
+   676→   676→        </section>
+   677→   677→
+   678→   678→        {/* ═══════════════════ STATS ═══════════════════ */}
+   679→   679→        <section className="py-20 sm:py-24 bg-[#0A0A0A] relative overflow-hidden">
+   680→   680→          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(185,28,28,0.06),transparent)]" />
+   681→   681→
+   682→   682→          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   683→   683→            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+   684→   684→              {stats.items.map((item, i) => (
+   685→   685→                <FadeIn key={i} delay={i * 0.1} className="text-center">
+   686→   686→                  <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
+   687→   687→                    {item.value}
+   688→   688→                  </div>
+   689→   689→                  <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
+   690→   690→                    {item.label}
+   691→   691→                  </div>
+   692→   692→                </FadeIn>
+   693→   693→              ))}
+   694→   694→            </div>
+   695→   695→          </div>
+   696→   696→        </section>
+   697→   697→
+   698→   698→        {/* ═══════════════════ REVIEWS ═══════════════════ */}
+   699→   699→        <section id="reviews" className="py-20 sm:py-28 bg-white">
+   700→   700→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   701→   701→            <FadeIn className="text-center mb-14 sm:mb-16">
+   702→   702→              <SectionLabel>{reviews.label}</SectionLabel>
+   703→   703→              <SectionHeading>{reviews.title}</SectionHeading>
+   704→   704→            </FadeIn>
+   705→   705→
+   706→   706→            <FadeIn>
+   707→   707→              <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+   708→   708→                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+   709→   709→                  <Quote size={28} className="text-red-700/40" />
+   710→   710→                </div>
+   711→   711→                <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+   712→   712→                  {reviews.placeholder}
+   713→   713→                </p>
+   714→   714→                <div className="flex items-center justify-center gap-1.5">
+   715→   715→                  {[...Array(5)].map((_, i) => (
+   716→   716→                    <Star
+   717→   717→                      key={i}
+   718→   718→                      size={18}
+   719→   719→                      className="text-gray-200 fill-gray-200"
+   720→   720→                    />
+   721→   721→                  ))}
+   722→   722→                </div>
+   723→   723→              </div>
+   724→   724→            </FadeIn>
+   725→   725→          </div>
+   726→   726→        </section>
+   727→   727→
+   728→   728→        {/* ═══════════════════ FAQ ═══════════════════ */}
+   729→   729→        <section id="faq" className="py-20 sm:py-28 bg-gray-50">
+   730→   730→          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   731→   731→            <FadeIn className="text-center mb-14 sm:mb-16">
+   732→   732→              <SectionLabel>{faq.label}</SectionLabel>
+   733→   733→              <SectionHeading>{faq.title}</SectionHeading>
+   734→   734→            </FadeIn>
+   735→   735→
+   736→   736→            <FadeIn delay={0.1}>
+   737→   737→              <Accordion type="single" collapsible className="w-full">
+   738→   738→                {faq.items.map((item, i) => (
+   739→   739→                  <AccordionItem
+   740→   740→                    key={i}
+   741→   741→                    value={`faq-${i}`}
+   742→   742→                    className="border-gray-200/80 bg-white rounded-xl px-6 mb-3 shadow-sm data-[state=open]:shadow-md transition-shadow"
+   743→   743→                  >
+   744→   744→                    <AccordionTrigger className="text-left text-[15px] font-semibold text-foreground hover:text-red-700 hover:no-underline py-5">
+   745→   745→                      {item.question}
+   746→   746→                    </AccordionTrigger>
+   747→   747→                    <AccordionContent className="text-muted-foreground text-sm leading-relaxed pb-5">
+   748→   748→                      {item.answer}
+   749→   749→                    </AccordionContent>
+   750→   750→                  </AccordionItem>
+   751→   751→                ))}
+   752→   752→              </Accordion>
+   753→   753→            </FadeIn>
+   754→   754→          </div>
+   755→   755→        </section>
+   756→   756→
+   757→   757→        {/* ═══════════════════ CONTACT ═══════════════════ */}
+   758→   758→        <section id="contact" className="py-20 sm:py-28 bg-white">
+   759→   759→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   760→   760→            <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
+   761→   761→              {/* Left: info */}
+   762→   762→              <div className="lg:col-span-2">
+   763→   763→                <FadeIn>
+   764→   764→                  <SectionLabel>{contact.label}</SectionLabel>
+   765→   765→                  <SectionHeading className="mb-4">{contact.title}</SectionHeading>
+   766→   766→                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-10">
+   767→   767→                    {contact.subtitle}
+   768→   768→                  </p>
+   769→   769→                </FadeIn>
+   770→   770→
+   771→   771→                <FadeIn delay={0.15}>
+   772→   772→                  <div className="flex flex-col gap-3">
+   773→   773→                    <Button
+   774→   774→                      asChild
+   775→   775→                      variant="outline"
+   776→   776→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   777→   777→                    >
+   778→   778→                      <a
+   779→   779→                        href="https://t.me/ilyaratnikov"
+   780→   780→                        target="_blank"
+   781→   781→                        rel="noopener noreferrer"
+   782→   782→                      >
+   783→   783→                        <MessageCircle size={19} className="text-red-700" />
+   784→   784→                        Telegram
+   785→   785→                      </a>
+   786→   786→                    </Button>
+   787→   787→                    <Button
+   788→   788→                      asChild
+   789→   789→                      variant="outline"
+   790→   790→                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
+   791→   791→                    >
+   792→   792→                      <a href="https://max.ru" target="_blank" rel="noopener noreferrer">
+   793→   793→                        <MessageCircle size={19} className="text-red-700" />
+   794→   794→                        Макс
+   795→   795→                      </a>
+   796→   796→                    </Button>
+   797→   797→                    <Button
+   798→   798→                      onClick={() => setCallbackOpen(true)}
+   799→   799→                      className="h-12 justify-start gap-3 text-[14px] font-medium bg-red-700 hover:bg-red-800 text-white rounded-lg"
+   800→   800→                    >
+   801→   801→                      <PhoneCall size={19} />
+   802→   802→                      {contact.callbackButton}
+   803→   803→                    </Button>
+   804→   804→                  </div>
+   805→   805→                </FadeIn>
+   806→   806→
+   807→   807→                {/* Contact info below messenger buttons */}
+   808→   808→                <FadeIn delay={0.25}>
+   809→   809→                  <div className="mt-10 space-y-4">
+   810→   810→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   811→   811→                      <Phone size={16} className="text-red-700/70 flex-shrink-0" />
+   812→   812→                      <a href="tel:+79892467798" className="hover:text-red-700 transition-colors">+7 (989) 246-77-98</a>
+   813→   813→                    </div>
+   814→   814→                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
+   815→   815→                      <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
+   816→   816→                      <span>{footer.address}</span>
+   817→   817→                    </div>
+   818→   818→                  </div>
+   819→   819→                </FadeIn>
+   820→   820→              </div>
+   821→   821→
+   822→   822→              {/* Right: form */}
+   823→   823→              <FadeIn delay={0.1} className="lg:col-span-3">
+   824→   824→                <form
+   825→   825→                  onSubmit={handleSubmit}
+   826→   826→                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
+   827→   827→                >
+   828→   828→                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
+   829→   829→                    <div className="space-y-2">
+   830→   830→                      <Label htmlFor="name" className="text-xs font-medium">
+   831→   831→                        {contact.name} *
+   832→   832→                      </Label>
+   833→   833→                      <Input
+   834→   834→                        id="name"
+   835→   835→                        value={formData.name}
+   836→   836→                        onChange={(e) =>
+   837→   837→                          setFormData((p) => ({ ...p, name: e.target.value }))
+   838→   838→                        }
+   839→   839→                        placeholder={contact.name}
+   840→   840→                        required
+   841→   841→                        className="h-11"
+   842→   842→                      />
+   843→   843→                    </div>
+   844→   844→                    <div className="space-y-2">
+   845→   845→                      <Label htmlFor="phone" className="text-xs font-medium">
+   846→   846→                        {contact.phone} *
+   847→   847→                      </Label>
+   848→   848→                      <Input
+   849→   849→                        id="phone"
+   850→   850→                        type="tel"
+   851→   851→                        value={formData.phone}
+   852→   852→                        onChange={(e) =>
+   853→   853→                          setFormData((p) => ({ ...p, phone: e.target.value }))
+   854→   854→                        }
+   855→   855→                        placeholder={contact.phone}
+   856→   856→                        required
+   857→   857→                        className="h-11"
+   858→   858→                      />
+   859→   859→                    </div>
+   860→   860→                  </div>
+   861→   861→
+   862→   862→                  <div className="space-y-2 mb-5">
+   863→   863→                    <Label className="text-xs font-medium">
+   864→   864→                      {contact.serviceType}
+   865→   865→                    </Label>
+   866→   866→                    <Select
+   867→   867→                      value={formData.serviceType}
+   868→   868→                      onValueChange={(v) =>
+   869→   869→                        setFormData((p) => ({ ...p, serviceType: v }))
+   870→   870→                      }
+   871→   871→                    >
+   872→   872→                      <SelectTrigger className="w-full h-11">
+   873→   873→                        <SelectValue placeholder={contact.serviceType} />
+   874→   874→                      </SelectTrigger>
+   875→   875→                      <SelectContent>
+   876→   876→                        {contact.serviceTypes.map((type) => (
+   877→   877→                          <SelectItem key={type} value={type}>
+   878→   878→                            {type}
+   879→   879→                          </SelectItem>
+   880→   880→                        ))}
+   881→   881→                      </SelectContent>
+   882→   882→                    </Select>
+   883→   883→                  </div>
+   884→   884→
+   885→   885→                  <div className="space-y-2 mb-6">
+   886→   886→                    <Label htmlFor="comment" className="text-xs font-medium">
+   887→   887→                      {contact.comment}
+   888→   888→                    </Label>
+   889→   889→                    <Textarea
+   890→   890→                      id="comment"
+   891→   891→                      value={formData.comment}
+   892→   892→                      onChange={(e) =>
+   893→   893→                        setFormData((p) => ({ ...p, comment: e.target.value }))
+   894→   894→                      }
+   895→   895→                      placeholder={contact.commentPlaceholder}
+   896→   896→                      rows={4}
+   897→   897→                      className="resize-none"
+   898→   898→                    />
+   899→   899→                  </div>
+   900→   900→
+   901→   901→                  <Button
+   902→   902→                    type="submit"
+   903→   903→                    disabled={loading}
+   904→   904→                    className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
+   905→   905→                  >
+   906→   906→                    {loading ? (
+   907→   907→                      <span className="flex items-center gap-2">
+   908→   908→                        <svg
+   909→   909→                          className="animate-spin h-4 w-4"
+   910→   910→                          viewBox="0 0 24 24"
+   911→   911→                          fill="none"
+   912→   912→                        >
+   913→   913→                          <circle
+   914→   914→                            className="opacity-25"
+   915→   915→                            cx="12"
+   916→   916→                            cy="12"
+   917→   917→                            r="10"
+   918→   918→                            stroke="currentColor"
+   919→   919→                            strokeWidth="4"
+   920→   920→                          />
+   921→   921→                          <path
+   922→   922→                            className="opacity-75"
+   923→   923→                            fill="currentColor"
+   924→   924→                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+   925→   925→                          />
+   926→   926→                        </svg>
+   927→   927→                        {contact.submit}
+   928→   928→                      </span>
+   929→   929→                    ) : (
+   930→   930→                      <span className="flex items-center gap-2">
+   931→   931→                        <Send size={16} />
+   932→   932→                        {contact.submit}
+   933→   933→                      </span>
+   934→   934→                    )}
+   935→   935→                  </Button>
+   936→   936→                </form>
+   937→   937→              </FadeIn>
+   938→   938→            </div>
+   939→   939→          </div>
+   940→   940→        </section>
+   941→   941→      </main>
+   942→   942→
+   943→   943→      {/* ═══════════════════ FOOTER ═══════════════════ */}
+   944→   944→      <footer className="bg-[#0A0A0A] text-white mt-auto">
+   945→   945→        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+   946→   946→          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
+   947→   947→            {/* Contacts */}
+   948→   948→            <div>
+   949→   949→              <p className="text-sm font-semibold tracking-tight mb-6">
+   950→   950→                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+   951→   951→              </p>
+   952→   952→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   953→   953→                {footer.contacts}
+   954→   954→              </h3>
+   955→   955→              <div className="space-y-3">
+   956→   956→                <a
+   957→   957→                  href="tel:+79892467798"
+   958→   958→                  className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
+   959→   959→                >
+   960→   960→                  <Phone size={15} className="text-red-500/80 flex-shrink-0" />
+   961→   961→                  +7 (989) 246-77-98
+   962→   962→                </a>
+   963→   963→                <div className="flex items-center gap-3 text-white/60 text-sm">
+   964→   964→                  <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
+   965→   965→                  {footer.address}
+   966→   966→                </div>
+   967→   967→              </div>
+   968→   968→            </div>
+   969→   969→
+   970→   970→            {/* Quick links */}
+   971→   971→            <div>
+   972→   972→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   973→   973→                {footer.quickLinks}
+   974→   974→              </h3>
+   975→   975→              <nav className="flex flex-col gap-3">
+   976→   976→                {navLinks.map((l) => (
+   977→   977→                  <button
+   978→   978→                    key={l.id}
+   979→   979→                    onClick={() => scrollTo(l.id)}
+   980→   980→                    className="text-left text-white/50 hover:text-white transition-colors text-sm"
+   981→   981→                  >
+   982→   982→                    {l.label}
+   983→   983→                  </button>
+   984→   984→                ))}
+   985→   985→              </nav>
+   986→   986→            </div>
+   987→   987→
+   988→   988→            {/* Social */}
+   989→   989→            <div>
+   990→   990→              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
+   991→   991→                {footer.followMe}
+   992→   992→              </h3>
+   993→   993→              <div className="flex flex-col gap-3">
+   994→   994→                <a
+   995→   995→                  href="https://t.me/ilyaratnikov"
+   996→   996→                  target="_blank"
+   997→   997→                  rel="noopener noreferrer"
+   998→   998→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+   999→   999→                >
+  1000→  1000→                  <MessageCircle size={15} className="flex-shrink-0" />
+  1001→  1001→                  {footer.telegram}
+  1002→  1002→                </a>
+  1003→  1003→                <a
+  1004→  1004→                  href="#"
+  1005→  1005→                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
+  1006→  1006→                >
+  1007→  1007→                  <Globe size={15} className="flex-shrink-0" />
+  1008→  1008→                  {footer.vk}
+  1009→  1009→                </a>
+  1010→  1010→              </div>
+  1011→  1011→            </div>
+  1012→  1012→          </div>
+  1013→  1013→        </div>
+  1014→  1014→
+  1015→  1015→        {/* Bottom bar */}
+  1016→  1016→        <div className="border-t border-white/[0.06]">
+  1017→  1017→          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+  1018→  1018→            <p className="text-white/40 text-xs">
+  1019→  1019→              &copy; 2025 {hero.name}. {footer.rights}
+  1020→  1020→            </p>
+  1021→  1021→            <p className="text-white/40 text-xs">{footer.madeIn}</p>
+  1022→  1022→          </div>
+  1023→  1023→        </div>
+  1024→  1024→      </footer>
+  1025→  1025→
+  1026→  1026→      {/* ═══════════════════ FLOATING BUTTONS ═══════════════════ */}
+  1027→  1027→      <TooltipProvider delayDuration={300}>
+  1028→  1028→        <div
+  1029→  1029→          className={`fixed bottom-6 right-6 z-40 flex flex-col gap-3 transition-all duration-300 ${
+  1030→  1030→            floatingVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
+  1031→  1031→          }`}
+  1032→  1032→        >
+  1033→  1033→          <Tooltip>
+  1034→  1034→            <TooltipTrigger asChild>
+  1035→  1035→              <a
+  1036→  1036→                href="https://t.me/ilyaratnikov"
+  1037→  1037→                target="_blank"
+  1038→  1038→                rel="noopener noreferrer"
+  1039→  1039→                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#229ED9] hover:bg-[#1a8bc4] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+  1040→  1040→                aria-label={floating.telegram}
+  1041→  1041→              >
+  1042→  1042→                <Send size={22} className="sm:w-5 sm:h-5" />
+  1043→  1043→              </a>
+  1044→  1044→            </TooltipTrigger>
+  1045→  1045→            <TooltipContent side="left" className="text-xs font-medium">
+  1046→  1046→              {floating.telegram}
+  1047→  1047→            </TooltipContent>
+  1048→  1048→          </Tooltip>
+  1049→  1049→
+  1050→  1050→          <Tooltip>
+  1051→  1051→            <TooltipTrigger asChild>
+  1052→  1052→              <a
+  1053→  1053→                href="https://max.ru"
+  1054→  1054→                target="_blank"
+  1055→  1055→                rel="noopener noreferrer"
+  1056→  1056→                className="w-14 h-14 sm:w-[56px] sm:h-[56px] bg-[#1a1a1a] hover:bg-[#333] text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all animate-pulse-slow"
+  1057→  1057→                aria-label={floating.max}
+  1058→  1058→              >
+  1059→  1059→                <MessageCircle size={22} className="sm:w-5 sm:h-5" />
+  1060→  1060→              </a>
+  1061→  1061→            </TooltipTrigger>
+  1062→  1062→            <TooltipContent side="left" className="text-xs font-medium">
+  1063→  1063→              {floating.max}
+  1064→  1064→            </TooltipContent>
+  1065→  1065→          </Tooltip>
+  1066→  1066→        </div>
+  1067→  1067→      </TooltipProvider>
+  1068→  1068→
+  1069→  1069→      {/* ═══════════════════ CALLBACK DIALOG ═══════════════════ */}
+  1070→  1070→      <Dialog open={callbackOpen} onOpenChange={setCallbackOpen}>
+  1071→  1071→        <DialogContent className="sm:max-w-md">
+  1072→  1072→          <DialogHeader>
+  1073→  1073→            <DialogTitle className="text-xl font-bold">{contact.callbackTitle}</DialogTitle>
+  1074→  1074→            <DialogDescription className="text-muted-foreground text-sm">
+  1075→  1075→              {contact.callbackDescription}
+  1076→  1076→            </DialogDescription>
+  1077→  1077→          </DialogHeader>
+  1078→  1078→          <form onSubmit={handleCallbackSubmit} className="space-y-4 mt-2">
+  1079→  1079→            <div className="space-y-2">
+  1080→  1080→              <Label htmlFor="cb-name" className="text-xs font-medium">{contact.name} *</Label>
+  1081→  1081→              <Input
+  1082→  1082→                id="cb-name"
+  1083→  1083→                value={callbackForm.name}
+  1084→  1084→                onChange={(e) => setCallbackForm((p) => ({ ...p, name: e.target.value }))}
+  1085→  1085→                placeholder={contact.name}
+  1086→  1086→                required
+  1087→  1087→                className="h-11"
+  1088→  1088→              />
+  1089→  1089→            </div>
+  1090→  1090→            <div className="space-y-2">
+  1091→  1091→              <Label htmlFor="cb-phone" className="text-xs font-medium">{contact.phone} *</Label>
+  1092→  1092→              <Input
+  1093→  1093→                id="cb-phone"
+  1094→  1094→                type="tel"
+  1095→  1095→                value={callbackForm.phone}
+  1096→  1096→                onChange={(e) => setCallbackForm((p) => ({ ...p, phone: e.target.value }))}
+  1097→  1097→                placeholder={contact.phone}
+  1098→  1098→                required
+  1099→  1099→                className="h-11"
+  1100→  1100→              />
+  1101→  1101→            </div>
+  1102→  1102→            <Button
+  1103→  1103→              type="submit"
+  1104→  1104→              disabled={callbackLoading}
+  1105→  1105→              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+  1106→  1106→            >
+  1107→  1107→              {callbackLoading ? (
+  1108→  1108→                <span className="flex items-center gap-2">
+  1109→  1109→                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+  1110→  1110→                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+  1111→  1111→                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  1112→  1112→                  </svg>
+  1113→  1113→                  {contact.callbackSubmit}
+  1114→  1114→                </span>
+  1115→  1115→              ) : (
+  1116→  1116→                <span className="flex items-center gap-2">
+  1117→  1117→                  <PhoneCall size={16} />
+  1118→  1118→                  {contact.callbackSubmit}
+  1119→  1119→                </span>
+  1120→  1120→              )}
+  1121→  1121→            </Button>
+  1122→  1122→          </form>
+  1123→  1123→        </DialogContent>
+  1124→  1124→      </Dialog>
+  1125→  1125→
+  1126→  1126→      {/* ═══════════════════ EXIT INTENT DIALOG ═══════════════════ */}
+  1127→  1127→      <Dialog open={exitIntentOpen} onOpenChange={setExitIntentOpen}>
+  1128→  1128→        <DialogContent className="sm:max-w-md">
+  1129→  1129→          <DialogHeader>
+  1130→  1130→            <DialogTitle className="text-2xl font-bold text-red-700">{exitIntent.title}</DialogTitle>
+  1131→  1131→            <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
+  1132→  1132→              {exitIntent.description}
+  1133→  1133→            </DialogDescription>
+  1134→  1134→          </DialogHeader>
+  1135→  1135→          <form onSubmit={handleExitIntentSubmit} className="space-y-4 mt-2">
+  1136→  1136→            <div className="space-y-2">
+  1137→  1137→              <Label htmlFor="ei-name" className="text-xs font-medium">{exitIntent.name} *</Label>
+  1138→  1138→              <Input
+  1139→  1139→                id="ei-name"
+  1140→  1140→                value={exitIntentForm.name}
+  1141→  1141→                onChange={(e) => setExitIntentForm((p) => ({ ...p, name: e.target.value }))}
+  1142→  1142→                placeholder={exitIntent.name}
+  1143→  1143→                required
+  1144→  1144→                className="h-11"
+  1145→  1145→              />
+  1146→  1146→            </div>
+  1147→  1147→            <div className="space-y-2">
+  1148→  1148→              <Label htmlFor="ei-phone" className="text-xs font-medium">{exitIntent.phone} *</Label>
+  1149→  1149→              <Input
+  1150→  1150→                id="ei-phone"
+  1151→  1151→                type="tel"
+  1152→  1152→                value={exitIntentForm.phone}
+  1153→  1153→                onChange={(e) => setExitIntentForm((p) => ({ ...p, phone: e.target.value }))}
+  1154→  1154→                placeholder={exitIntent.phone}
+  1155→  1155→                required
+  1156→  1156→                className="h-11"
+  1157→  1157→              />
+  1158→  1158→            </div>
+  1159→  1159→            <Button
+  1160→  1160→              type="submit"
+  1161→  1161→              disabled={exitIntentLoading}
+  1162→  1162→              className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg disabled:opacity-70"
+  1163→  1163→            >
+  1164→  1164→              {exitIntentLoading ? (
+  1165→  1165→                <span className="flex items-center gap-2">
+  1166→  1166→                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+  1167→  1167→                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+  1168→  1168→                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+  1169→  1169→                  </svg>
+  1170→  1170→                  {exitIntent.submit}
+  1171→  1171→                </span>
+  1172→  1172→              ) : (
+  1173→  1173→                <span className="flex items-center gap-2">
+  1174→  1174→                  <Send size={16} />
+  1175→  1175→                  {exitIntent.submit}
+  1176→  1176→                </span>
+  1177→  1177→              )}
+  1178→  1178→            </Button>
+  1179→  1179→          </form>
+  1180→  1180→        </DialogContent>
+  1181→  1181→      </Dialog>
+  1182→  1182→    </div>
+  1183→  1183→  );
+  1184→  1184→}

@@ -372,3 +372,83 @@ Stage Summary:
 - ESLint: 0 errors
 - All APIs return correct data
 - Landing page HTML contains: FAQ, callback, floating buttons, OG tags, Schema.org
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Make landing page values dynamic from CRM settings + improve design with animations
+
+Work Log:
+
+### Task 1: Dynamic Settings
+- **Step 1**: Expanded `SETTINGS_KEYS` in `src/app/api/admin/settings/route.ts` — added `phone`, `address`, `max_profile_url`
+- **Step 2**: Expanded `PUBLIC_KEYS` in `src/app/api/settings/route.ts` — added `max_profile_url`, `phone`, `address` (total 9 public keys)
+- **Step 3**: Rewrote settings state in `src/app/page.tsx`:
+  - Removed standalone `cianUrl` state, replaced with `siteSettings` object containing: cianUrl, telegram, maxUrl, vk, instagram, whatsapp, phoneRaw, phone, address, metrikaId
+  - Added `formatPhone()` helper that formats raw phone to `+7 (XXX) XXX-XX-XX`
+  - Settings fetch now populates all fields from `/api/settings` API
+  - Replaced ALL hardcoded values: Telegram links (contact section, footer, floating buttons), Max links (contact section, floating buttons), phone display/link (contact section, footer), address (contact section, footer), VK link (footer), CIAN URL (hero)
+- **Step 4**: Added Yandex Metrika dynamic injection — if `yandex_metrika_id` is set in settings, injects the full Metrika tag.js script into `<head>` with clickmap, trackLinks, accurateTrackBounce
+- **Step 5**: Updated `src/app/admin/settings/page.tsx` — added 2 new settings sections:
+  - "Контакты" section with Phone + Address fields
+  - "Профиль Max" section with Max profile URL field
+
+### Task 2: Design and Animation Enhancements (10 sub-tasks)
+- **A. FadeIn enhanced**: Added scale(0.98) and blur(4px) to hidden state, upgraded to cubic-bezier(0.16, 1, 0.3, 1) easing with 0.8s duration
+- **B. Animated counters**: Created `useCountUp` hook + `StatItem` component for Stats section — numbers animate from 0 to target using easeOutCubic over 1500ms, triggered by IntersectionObserver
+- **C. Hero parallax**: Added `heroParallax` state tracking `scrollY * 0.3`, applied to hero gradient overlay divs via inline transform for depth effect
+- **D. Advantage cards hover**: Added `hover:-translate-y-1` and increased shadow opacity on hover
+- **E. Scroll progress bar**: Added fixed 3px red bar at top of page (z-[60]), width driven by `scrollProgress` state tracking scroll percentage
+- **F. Service cards stagger**: Increased delay from `i * 0.1` to `i * 0.12` for more visible stagger
+- **G. CTA button glow**: Added `btn-glow` CSS class with `subtle-glow` keyframe animation (red pulsing shadow), applied to hero CTA button
+- **H. SectionLabel red line**: Each section label now has a decorative 32px red line above the text via flexbox layout
+- **I. Navbar slide-down**: Added `animate-[slideDown_0.3s_ease-out]` class when navbar becomes visible on scroll, with `slideDown` keyframe in globals.css
+- **J. Back-to-top button**: Added ArrowUp button in floating buttons area, visible only when `scrolled` is true, smooth scrolls to top
+
+### CSS additions (globals.css):
+- `@keyframes subtle-glow` + `.btn-glow` class
+- `@keyframes slideDown` for navbar animation
+
+Stage Summary:
+- All landing page values now come from CRM settings (dynamic)
+- 10 animation/design enhancements implemented
+- Yandex Metrika injected dynamically from settings
+- CRM settings page expanded with phone, address, max_profile_url inputs
+- ESLint: 0 errors
+- Dev server compiles successfully
+
+Files Modified:
+- src/app/api/admin/settings/route.ts (3 new keys)
+- src/app/api/settings/route.ts (3 new public keys)
+- src/app/page.tsx (major rewrite: dynamic settings + 10 animations)
+- src/app/admin/settings/page.tsx (2 new settings sections)
+- src/app/globals.css (2 new keyframe animations)
+---
+Task ID: 3
+Agent: Main Coordinator + full-stack-developer subagent
+Task: Make all landing page settings dynamic from CRM, add animations
+
+Work Log:
+- Added phone, address, max_profile_url to admin settings keys
+- Expanded public /api/settings to expose 9 public keys
+- Replaced all hardcoded values on landing page with siteSettings state:
+  Telegram (3 locations), Max (3 locations), phone (2), address (2), VK (1), CIAN (1)
+- Added formatPhone() helper for phone display formatting
+- Dynamic Yandex Metrika script injection when metrika_id is set
+- Added new settings sections in CRM: "Контакты" (phone, address), "Профиль Max" (URL)
+- Animation enhancements:
+  - Enhanced FadeIn with scale(0.98→1) + blur(4px→0) + cubic-bezier easing
+  - Animated stat counters with useCountUp hook (easeOutCubic, 1.5s)
+  - Hero parallax on scroll (0.3x multiplier on gradient layers)
+  - Card hover lift (-translate-y-1)
+  - Scroll progress bar (3px red, z-60)
+  - CTA glow pulse animation (subtle-glow keyframe)
+  - Section label decorative red line (w-8 h-0.5)
+  - Navbar slideDown animation on scroll
+  - Back-to-top ArrowUp button in floating area
+
+Stage Summary:
+- All landing page links/values now read from /api/settings (client-side)
+- Admin settings page has new fields for phone, address, Max profile
+- 10 animation improvements applied
+- Lint: 0 errors
