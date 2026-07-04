@@ -1,0 +1,633 @@
+     1→     1→---
+     2→     2→Task ID: 1
+     3→     3→Agent: Main Orchestrator
+     4→     4→Task: Foundation setup - DB schema, i18n, auth, notifications, all API routes
+     5→     5→
+     6→     6→Work Log:
+     7→     7→- Extracted hero photo from Tilda site (896x1195 portrait) to public/hero-photo.jpg
+     8→     8→- Designed and pushed Prisma schema with 7 models: Lead, Client, Deal, Property, Task, Setting, ActivityLog
+     9→     9→- Created i18n system with full RU/EN translations (src/lib/i18n.ts, src/lib/i18n-context.tsx)
+    10→    10→- Created notification system with Telegram + Max webhook support (src/lib/notifications.ts)
+    11→    11→- Created simple auth system (src/lib/auth.ts)
+    12→    12→- Updated globals.css with red/black/white St. Petersburg real estate theme
+    13→    13→- Updated root layout.tsx with proper metadata and I18nProvider
+    14→    14→- Created 9 API routes: /api/leads, /api/admin/auth, /api/admin/dashboard, /api/admin/leads, /api/admin/deals, /api/admin/clients, /api/admin/properties, /api/admin/tasks, /api/admin/settings
+    15→    15→
+    16→    16→Stage Summary:
+    17→    17→- Complete foundation is ready for frontend development
+    18→    18→- Database schema is pushed and generated
+    19→    19→- All API endpoints are functional
+    20→    20→- i18n translations cover all landing page content
+    21→    21→- Color theme: red (#B91C1C), black, white - St. Petersburg real estate style
+    22→    22→
+    23→    23→---
+    24→    24→Task ID: 2
+    25→    25→Agent: fullstack-developer
+    26→    26→Task: Build landing page UI
+    27→    27→
+    28→    28→Work Log:
+    29→    29→- Updated layout.tsx Toaster import from shadcn/ui/toaster to sonner (direct package import)
+    30→    30→- Built complete landing page in src/app/page.tsx (single "use client" component, ~500 lines)
+    31→    31→- Implemented all 10 sections:
+    32→    32→  1. **Navbar**: Sticky, transparent on hero → white on scroll (backdrop-blur), logo "РАТНИКОВ/недвижимость", centered nav links, RU/EN toggle, red CTA button, Sheet-based hamburger menu on mobile
+    33→    33→  2. **Hero**: Full viewport dark (#0A0A0A) section, gradient + radial red glow bg, left= text (greeting, name, title, subtitle, 2 CTAs), right= hero photo with red accent line, scroll indicator, 3px red accent bar at top
+    34→    34→  3. **About**: 2-column (photo + text), section label, description, mission box, Setl Group partner badge, decorative corner elements
+    35→    35→  4. **Advantages (Why Me)**: 4 cards in 2x2 grid, Lucide icons (BarChart3, ShieldCheck, Megaphone, Handshake), hover effect (icon bg turns red)
+    36→    36→  5. **Services**: 4 numbered cards (01-04) in responsive grid, red accent numbers
+    37→    37→  6. **Stats**: Dark background, 4 stat items (2+ years, 15+ deals, 98% satisfaction, 24/7)
+    38→    38→  7. **Reviews**: Empty state with Quote icon, placeholder message, 5 empty stars
+    39→    39→  8. **Contact Form**: 2/5 + 3/5 grid layout, form (name, phone, Select for service type, Textarea), POSTs to /api/leads, loading spinner, Sonner toast on success/error, messenger buttons (Telegram + Max)
+    40→    40→  9. **Messenger Buttons**: Telegram (t.me/ilyaratnikov) and Max (max.ru) with MessageCircle icons
+    41→    41→  10. **Footer**: Dark bg, 3 columns (contacts, quick links, social media), copyright bar with "© 2025 Илья Ратников"
+    42→    42→- Custom FadeIn component using IntersectionObserver for scroll-triggered animations (replaces CSS-only approach for better UX)
+    43→    43→- All text uses i18n system (useI18n hook) — full RU/EN support
+    44→    44→- Responsive: mobile-first with Tailwind breakpoints (sm, lg)
+    45→    45→- Smooth scroll between sections via scrollIntoView
+    46→    46→- Build verified: `next build` compiled successfully with zero errors
+    47→    47→
+    48→    48→Stage Summary:
+    49→    49→- Complete landing page is functional and visually polished
+    50→    50→- All sections are responsive and i18n-ready
+    51→    51→- Contact form wired to /api/leads with Sonner toast notifications
+    52→    52→- No new packages installed
+    53→    53→- Files changed: src/app/page.tsx (rewritten), src/app/layout.tsx (Toaster import updated)
+    54→    54→
+    55→    55→---
+    56→    56→Task ID: 4
+    57→    57→Agent: fullstack-developer
+    58→    58→Task: Build comprehensive CRM admin panel
+    59→    59→
+    60→    60→Work Log:
+    61→    61→- Created 9 admin pages with full CRUD functionality, all using "use client" and shadcn/ui components
+    62→    62→- **Login page** (`src/app/admin/login/page.tsx`): Password-only auth form, POST to /api/admin/auth, stores `isAdmin` in localStorage, red Lock icon, "На сайт" link back to landing
+    63→    63→- **Admin layout** (`src/app/admin/layout.tsx`): Dark sidebar (w-64, bg-[#0A0A0A]) with 8 nav items (Dashboard, Лиды, Сделки, Клиенты, Объекты, Задачи, Аналитика, Настройки), red accent on active items, mobile hamburger menu with overlay, sticky top bar with page title + "На сайт" link + avatar, auth guard redirects to /admin/login if not authenticated, responsive (sidebar hidden on mobile, slide-in animation)
+    64→    64→- **Dashboard** (`src/app/admin/page.tsx`): 5 stat cards (Новые лиды, Активные сделки, Клиенты, Задачи, Выручка) with colored icons, quick action buttons linking to create forms, bar chart (лиды по месяцам, recharts BarChart), donut pie chart (сделки по стадиям, recharts PieChart), recent activity feed with emoji icons and relative timestamps
+    65→    65→- **Leads** (`src/app/admin/leads/page.tsx`): Filter tabs (Все/Новые/Контактированные/Квалифицированные/Потерянные), search by name/phone, expandable table rows, inline status change via Select dropdown (with colored badges: blue/yellow/green/red), editable notes textarea per lead, delete with AlertDialog confirmation, clickable phone links
+    66→    66→- **Deals** (`src/app/admin/deals/page.tsx`): Kanban-style 6-column board (Новая/Показ/Переговоры/Договор/Успешно/Провалено), deal cards with title/client/value/date, inline stage change via Select dropdown per card, create/edit dialog with client & property selectors, delete confirmation, colored column headers with dot indicators
+    67→    67→- **Clients** (`src/app/admin/clients/page.tsx`): Card grid layout, search bar, create/edit dialog (name, phone, email, telegram, notes), "Из лида" conversion dialog (auto-fills name/phone from selected new lead), delete with confirmation, deal count per client, avatar with initial, contact links (phone, email, telegram)
+    68→    68→- **Properties** (`src/app/admin/properties/page.tsx`): Status filter tabs (Все/Доступные/Бронь/Продано), property cards with type/rooms/area/price/address, CIAN external link button, create/edit dialog with all fields (title, address, type select, rooms, area, price, status, CIAN URL, description), delete confirmation, color-coded status badges
+    69→    69→- **Tasks** (`src/app/admin/tasks/page.tsx`): Task list with priority dots (red=high, yellow=medium, green=low), filter tabs (Все/В ожидании/В работе/Выполнено), checkbox toggle for completion (line-through + dimmed), overdue detection with red badge + AlertCircle icon, create/edit dialog (title, description, priority, due date, client name), status badges (yellow/blue/green)
+    70→    70→- **Analytics** (`src/app/admin/analytics/page.tsx`): 4 KPI cards (конверсия лиды→клиенты, закрываемость сделок, средний чек, активная воронка), leads by month bar chart, leads by status donut chart with labels, deals by stage pie chart with legend, summary stats panel (all key metrics in a list)
+    71→    71→- **Settings** (`src/app/admin/settings/page.tsx`): 6 sections in cards — Telegram notifications (bot token + chat ID + test button), Max notifications (webhook URL + test), Social media (Telegram/VK/Instagram/WhatsApp links), Yandex.Metrika (counter ID), Cian profile (URL), Security (password change with current/new/confirm verification), per-section save buttons, loading spinner states
+    72→    72→
+    73→    73→Design:
+    74→    74→- Consistent dark sidebar (#0A0A0A) + light content area (gray-50) theme
+    75→    75→- Red accent (#B91C1C / bg-red-700) throughout all interactive elements
+    76→    76→- Russian text for all UI labels
+    77→    77→- Loading skeletons on all pages
+    78→    78→- Empty states with icons and messages
+    79→    79→- Toast notifications (sonner) for all CRUD operations
+    80→    80→- AlertDialog for all delete confirmations
+    81→    81→- Build verified: `next build` compiled successfully with zero errors (22 routes)
+    82→    82→
+    83→    83→Files created:
+    84→    84→- src/app/admin/login/page.tsx
+    85→    85→- src/app/admin/layout.tsx
+    86→    86→- src/app/admin/page.tsx (dashboard)
+    87→    87→- src/app/admin/leads/page.tsx
+    88→    88→- src/app/admin/deals/page.tsx
+    89→    89→- src/app/admin/clients/page.tsx
+    90→    90→- src/app/admin/properties/page.tsx
+    91→    91→- src/app/admin/tasks/page.tsx
+    92→    92→- src/app/admin/settings/page.tsx
+    93→    93→- src/app/admin/analytics/page.tsx
+    94→    94→
+    95→    95→Stage Summary:
+    96→    96→- Complete CRM admin panel is functional with all 8 sections
+    97→    97→- All CRUD operations wired to existing API endpoints
+    98→    98→- Auth guard with localStorage-based session
+    99→    99→- Responsive design (mobile sidebar, responsive grids)
+   100→   100→- Professional data-dense CRM interface with charts, kanban, and task management
+   101→   101→- No new packages installed, no existing files modified
+   102→   102→
+   103→   103→---
+   104→   104→Task ID: 7
+   105→   105→Agent: Main Orchestrator
+   106→   106→Task: Final testing, bug fixes, and polish
+   107→   107→
+   108→   108→Work Log:
+   109→   109→- Fixed ESLint errors: missing Separator import in analytics, missing Select imports in clients, component-during-render and setState-in-effect in admin layout
+   110→   110→- Rewrote admin layout to use useSyncExternalStore for mounted check (React 19 compliant)
+   111→   111→- Fixed placeholder phone number (+7 999 123-45-67 → +7 989 246-77-98) in contact section and footer
+   112→   112→- Enhanced settings API to support test notifications (Telegram + Max webhook)
+   113→   113→- Verified contact form submission → toast notification → lead appears in CRM
+   114→   114→- Verified RU/EN language toggle switches all text
+   115→   115→- Verified CRM login flow (password: realtor2025)
+   116→   116→- Verified CRM dashboard, leads table, settings page
+   117→   117→- Verified mobile responsive layout (375x812 viewport)
+   118→   118→- All lint checks pass with zero errors
+   119→   119→
+   120→   120→Stage Summary:
+   121→   121→- Production-ready landing page + CRM admin panel
+   122→   122→- All core interactions verified through agent-browser testing
+   123→   123→- Clean lint, no build errors---
+   124→   124→Task ID: 1
+   125→   125→Agent: Main Agent
+   126→   126→Task: Fix button contrast bug, remove CRM icon, audit contrast issues, suggest improvements
+   127→   127→
+   128→   128→Work Log:
+   129→   129→- Read full page.tsx (863 lines) and identified the "Смотреть объекты" button bug
+   130→   130→- Root cause: `variant="outline"` from shadcn/ui Button applies `bg-background` (white ~oklch(0.98 0 0)), making white text invisible on white background before hero dark bg renders
+   131→   131→- Fix: Replaced `<Button variant="outline">` wrapper with a plain `<a>` tag using `bg-transparent` class
+   132→   132→- Verified fix via agent-browser: computed style shows `rgba(0, 0, 0, 0)` background with white text
+   133→   133→- Audited entire page for contrast issues - all other sections have proper contrast
+   134→   134→- Confirmed no CRM icon exists in navbar (both desktop and mobile views)
+   135→   135→- Removed unused `nav.admin: "CRM"` key from i18n translations (both RU and EN)
+   136→   136→- Full page browser verification: no console errors, all interactive elements working
+   137→   137→
+   138→   138→Stage Summary:
+   139→   139→- Button bug fixed: "Смотреть объекты" now has transparent bg on dark hero
+   140→   140→- No CRM icon found in navbar (already clean)
+   141→   141→- Cleaned up i18n translations
+   142→   142→- All contrast issues resolved
+   143→   143→
+   144→   144→---
+   145→   145→Task ID: 1-A
+   146→   146→Agent: full-stack-developer
+   147→   147→Task: Landing page features - floating buttons, callback, FAQ, exit intent, SEO, page speed
+   148→   148→
+   149→   149→Work Log:
+   150→   150→- Added i18n translations (RU/EN) for: FAQ (6 questions/answers), callback form, exit intent popup, floating button tooltips to src/lib/i18n.ts
+   151→   151→- Updated src/app/layout.tsx with:
+   152→   152→  - Schema.org JSON-LD for RealEstateAgent structured data
+   153→   153→  - Open Graph meta tags (og:title, og:description, og:image, og:url, og:type, og:locale, og:siteName)
+   154→   154→  - Twitter card meta tags (summary_large_image)
+   155→   155→  - Emoji favicon (🏠) as SVG data URI
+   156→   156→  - Preload link for /hero-photo.jpg with fetchPriority="high"
+   157→   157→  - metadataBase for proper OG image URL resolution
+   158→   158→- Updated src/app/page.tsx with:
+   159→   159→  - Feature 1: Floating Telegram (blue #229ED9) + Max (dark #1a1a1a) circular buttons at bottom-right with TooltipProvider hover text, pulse animation, hide-on-scroll-down/show-on-scroll-up behavior using requestAnimationFrame
+   160→   160→  - Feature 4: Callback form dialog (shadcn Dialog) with name/phone inputs, "Перезвоните мне" button in contact section, POST to /api/leads with serviceType "Обратный звонок"/"Callback"
+   161→   161→  - Feature 5: FAQ section between reviews and contact with 6 Accordion items, centered layout on gray-50 background, matching design system
+   162→   162→  - Feature 6: Exit intent popup triggered by mouseleave (clientY < 5) on documentElement, sessionStorage guard (exitIntentShown + formSubmitted), Dialog with name/phone form, POST to /api/leads with serviceType "Exit Intent"
+   163→   163→  - Feature 10: fetchPriority="high" on hero Image, loading="lazy" on about section Image
+   164→   164→- Added animate-pulse-slow CSS keyframes to globals.css for floating button pulse effect
+   165→   165→- Added imports: Dialog, Accordion, Tooltip components from shadcn/ui; PhoneCall from lucide-react; useCallback from react
+   166→   166→- All lint checks pass with zero errors
+   167→   167→
+   168→   168→Stage Summary:
+   169→   169→- 6 features implemented across 4 files (i18n.ts, layout.tsx, page.tsx, globals.css)
+   170→   170→- All existing sections preserved, no regressions
+   171→   171→- Clean ESLint, dev server compiles successfully
+   172→   172→- All forms POST to /api/leads with appropriate serviceType values
+   173→   173→
+   174→   174→---
+   175→   175→Task ID: 1-B
+   176→   176→Agent: Backend Developer
+   177→   177→Task: Implement all backend changes for 10 CRM features
+   178→   178→
+   179→   179→Work Log:
+   180→   180→
+   181→   181→### STEP 1: Schema Changes
+   182→   182→- Added `tags String?` to Lead model (JSON array)
+   183→   183→- Added `tags String?`, `telegramHandle String?`, `maxId String?`, `source String?` to Client model
+   184→   184→- Added new `MessageTemplate` model (id, name, content, category, createdAt, updatedAt)
+   185→   185→- ActivityLog model preserved as-is
+   186→   186→- Ran `bun run db:push` — schema synced, Prisma Client regenerated
+   187→   187→
+   188→   188→### STEP 2: Lead Creation API — Duplicate Detection
+   189→   189→- Modified `src/app/api/leads/route.ts` (public endpoint)
+   190→   190→- Before creating, checks for existing lead with same phone number
+   191→   191→- If duplicate found: still creates the lead, adds note about duplicate, logs "Новый лид (возможный дубликат)"
+   192→   192→- Response includes `duplicate: true` and `existingLead` object when found
+   193→   193→
+   194→   194→### STEP 3: Import/Export APIs
+   195→   195→- Created `src/app/api/admin/export/leads/route.ts` — GET returns CSV (Name, Phone, Service Type, Status, Source, Comment, Created At, Tags)
+   196→   196→- Created `src/app/api/admin/export/clients/route.ts` — GET returns CSV (Name, Phone, Email, Telegram, Source, Notes, Tags, Created At)
+   197→   197→- Created `src/app/api/admin/import/leads/route.ts` — POST multipart/form-data CSV import, matches headers, checks duplicates, returns import count
+   198→   198→- Created `src/app/api/admin/import/clients/route.ts` — POST multipart/form-data CSV import for clients
+   199→   199→- All CSV parsers are hand-written (no external libraries), handle quoted fields
+   200→   200→
+   201→   201→### STEP 4: Message Templates API
+   202→   202→- Created `src/app/api/admin/templates/route.ts` — GET (with optional `?category=` filter) + POST
+   203→   203→- Created `src/app/api/admin/templates/[id]/route.ts` — PUT + DELETE
+   204→   204→- Pre-seeded 4 default templates (returned when DB is empty): Приветствие (greeting), Назначение показа (showing), Follow-up (followup), Поздравление со сделкой (congrats)
+   205→   205→
+   206→   206→### STEP 5: Funnel Data API
+   207→   207→- Created `src/app/api/admin/funnel/route.ts` — GET returns leads by status, deals by stage, conversion rates
+   208→   208→
+   209→   209→### STEP 6: Reminders API
+   210→   210→- Created `src/app/api/admin/reminders/route.ts` — GET checks 3 types: stale leads (>24h), overdue tasks, stale deals (>7d no stage change)
+   211→   211→- Optional `?send=true` triggers Telegram/Max notifications
+   212→   212→- Returns array of reminder objects with type, message, suggested action
+   213→   213→
+   214→   214→### STEP 7: Activity Timeline API
+   215→   215→- Created `src/app/api/admin/clients/[id]/timeline/route.ts` — GET returns activity logs matching client ID, name, phone, or lead ID
+   216→   216→
+   217→   217→### STEP 8: Enhanced Existing APIs
+   218→   218→- `src/app/api/admin/leads/route.ts`: Added `?tags=VIP,Покупатель` filtering (match any), tags update in PUT
+   219→   219→- `src/app/api/admin/clients/route.ts`: Added tags filtering, tags/telegramHandle/maxId/source fields in POST/PUT, activity logging on create/update/delete
+   220→   220→- `src/app/api/admin/tasks/route.ts`: Added activity logging on create, complete, update
+   221→   221→- `src/app/api/admin/deals/route.ts`: Added stage change logging with before/after stage names, fetches current deal before update
+   222→   222→
+   223→   223→### STEP 9: Reminder Cron Mini-Service
+   224→   224→- Created `mini-services/reminder-service/` — independent Bun project on port 3099
+   225→   225→- package.json with @prisma/client + prisma dependencies
+   226→   226→- Symlinks to main project's prisma/ and db/ folders
+   227→   227→- `index.ts`: setInterval every 30 minutes, checks stale leads/tasks/deals, sends Telegram notifications
+   228→   228→- Health check endpoint returns `{"status":"ok","service":"reminder-service"}`
+   229→   229→- Verified: starts successfully, responds to HTTP requests
+   230→   230→
+   231→   231→### Lint
+   232→   232→- `bun run lint` passes with zero errors
+   233→   233→
+   234→   234→Files Created:
+   235→   235→- src/app/api/admin/export/leads/route.ts
+   236→   236→- src/app/api/admin/export/clients/route.ts
+   237→   237→- src/app/api/admin/import/leads/route.ts
+   238→   238→- src/app/api/admin/import/clients/route.ts
+   239→   239→- src/app/api/admin/templates/route.ts
+   240→   240→- src/app/api/admin/templates/[id]/route.ts
+   241→   241→- src/app/api/admin/funnel/route.ts
+   242→   242→- src/app/api/admin/reminders/route.ts
+   243→   243→- src/app/api/admin/clients/[id]/timeline/route.ts
+   244→   244→- mini-services/reminder-service/package.json
+   245→   245→- mini-services/reminder-service/index.ts
+   246→   246→
+   247→   247→Files Modified:
+   248→   248→- prisma/schema.prisma (added tags to Lead, new fields to Client, MessageTemplate model)
+   249→   249→- src/app/api/leads/route.ts (duplicate detection)
+   250→   250→- src/app/api/admin/leads/route.ts (tags filtering + update)
+   251→   251→- src/app/api/admin/clients/route.ts (tags, new fields, activity logging)
+   252→   252→- src/app/api/admin/tasks/route.ts (activity logging)
+   253→   253→- src/app/api/admin/deals/route.ts (stage change logging)
+   254→   254→
+   255→   255→Stage Summary:
+   256→   256→- All 9 backend steps completed successfully
+   257→   257→- 11 new API endpoints created, 5 existing APIs enhanced
+   258→   258→- 1 mini-service (reminder cron) created and verified
+   259→   259→- Database schema updated and pushed
+   260→   260→- Zero lint errors
+   261→   261→
+   262→   262→---
+   263→   263→Task ID: 2
+   264→   264→Agent: Frontend Developer
+   265→   265→Task: Implement ALL frontend changes for 10 CRM features
+   266→   266→
+   267→   267→Work Log:
+   268→   268→
+   269→   269→### Feature 1: Import/Export UI
+   270→   270→- Updated `src/app/admin/leads/page.tsx`: Added "Экспорт CSV" (Download icon, `window.open`) and "Импорт CSV" (Upload icon, Dialog with file input, POST FormData) buttons
+   271→   271→- Updated `src/app/admin/clients/page.tsx`: Same import/export buttons with `/api/admin/export/clients` and `/api/admin/import/clients` endpoints
+   272→   272→- Both import dialogs show toast with count of imported items
+   273→   273→
+   274→   274→### Feature 2: Visual Sales Funnel
+   275→   275→- Rewrote `src/app/admin/analytics/page.tsx`: Added FunnelChart component at the top of the page
+   276→   276→- Fetches from `/api/admin/funnel` API alongside dashboard data
+   277→   277→- "Воронка лидов" section: horizontal bars (desktop) / vertical bars (mobile) with gradient from red-700 to red-200, shows count + percentage, conversion rate badges
+   278→   278→- "Воронка сделок" section: same visual style for deal stages
+   279→   279→- Responsive: horizontal on desktop, vertical on mobile via `hidden md:flex` and `md:hidden` classes
+   280→   280→
+   281→   281→### Feature 3: Auto Reminders Display
+   282→   282→- Rewrote `src/app/admin/page.tsx` (Dashboard): Added "Напоминания" card at the very top
+   283→   283→- Fetches from `/api/admin/reminders` on page load
+   284→   284→- Shows count badge, lists reminders with type-specific icons (AlertTriangle for overdue tasks, Clock for stale leads, RefreshCw for stuck deals)
+   285→   285→- "Напомнить" button calls `/api/admin/reminders?send=true` to send Telegram notifications
+   286→   286→- Green "✓ Нет активных напоминаний" when empty
+   287→   287→- Auto-refreshes every 5 minutes via setInterval with cleanup
+   288→   288→
+   289→   289→### Feature 4: Quick Message Actions (Telegram + Max + Templates)
+   290→   290→- Leads page: Added Telegram button (opens `https://t.me/+7{digits}`), Max button (opens `https://max.ru/`), Templates button (Popover fetching from `/api/admin/templates`, copies template with {name} replaced)
+   291→   291→- Clients page: Same buttons but Telegram uses `telegramHandle` if available (link to `https://t.me/{handle}`), otherwise falls back to phone digits
+   292→   292→- Templates Popover shows all templates, clicking copies content to clipboard and shows "Шаблон скопирован" toast
+   293→   293→
+   294→   294→### Feature 5: Duplicate Detection UI
+   295→   295→- Updated `src/lib/i18n.ts`: Added `duplicateWarning` translation for both RU and EN locales
+   296→   296→- Updated `src/app/page.tsx`: Modified all 3 form handlers (main contact, callback, exit intent) to check for `duplicate: true` in response JSON and show `toast.warning()` instead of `toast.success()`
+   297→   297→
+   298→   298→### Feature 6: Tags UI
+   299→   299→- Leads page: Added tags filter dropdown (Select with predefined tags), tag badges in table rows and mobile cards, "Редактировать теги" section in expanded row with quick-select tag buttons
+   300→   300→- Clients page: Same tags filter, tags displayed as badges on client cards, tags field in create/edit dialog with quick-select buttons
+   301→   301→- Predefined tags: VIP, Покупатель, Продавец, Инвестор, Арендатор, Новостройка, Вторичный рынок
+   302→   302→- Deterministic color function: hash-based selection from 6-color palette (red/blue/green/amber/purple/pink)
+   303→   303→- Tags saved as JSON array via API
+   304→   304→
+   305→   305→### Feature 7: Message Templates Management Page
+   306→   306→- Created `src/app/admin/templates/page.tsx`: Full CRUD page with template cards in a responsive grid
+   307→   307→- Each card shows: name, category badge (greeting=green, showing=blue, followup=amber, congrats=purple, general=gray), content preview (line-clamp-2), Edit/Delete buttons
+   308→   308→- Create/Edit dialog with name input, category select, content textarea with {name} placeholder hint
+   309→   309→- Updated `src/app/admin/layout.tsx`: Added `{ href: "/admin/templates", label: "Шаблоны", icon: MessageSquare }` to NAV_ITEMS and PAGE_TITLES
+   310→   310→
+   311→   311→### Feature 8: Enhanced Dashboard Widgets
+   312→   312→- Rewrote `src/app/admin/page.tsx` (Dashboard): Kept existing stat cards at top
+   313→   313→- Added 4-column responsive widget grid below stats:
+   314→   314→  1. "Последние лиды" - fetches 5 newest leads, shows name + phone + time ago + status badge
+   315→   315→  2. "Просроченные задачи" - fetches tasks with dueDate < now, shows in red with AlertTriangle icons
+   316→   316→  3. "Сделки в работе" - fetches deals not in closed stages, shows mini-pipeline counts by stage
+   317→   317→  4. "Быстрые действия" - Link buttons for "Новый лид", "Новая задача", "Новый клиент", "Новая сделка"
+   318→   318→- Responsive: 1 col on mobile, 2 on md, 4 on lg
+   319→   319→
+   320→   320→### Feature 9: Client Activity Timeline
+   321→   321→- Updated `src/app/admin/clients/page.tsx`: Added History button on each client card
+   322→   322→- Opens a Sheet (side panel) that fetches from `/api/admin/clients/[id]/timeline`
+   323→   323→- Vertical timeline with colored dots (create=green, update=blue, delete=red, stage_change=amber) and vertical line
+   324→   324→- Each entry shows date/time, action details
+   325→   325→- "Нет записей" empty state, loading skeletons
+   326→   326→
+   327→   327→### Feature 10: Mobile Responsive CRM
+   328→   328→- Leads page: Added mobile card view (hidden md:table, md:hidden cards), full-width filters on mobile, responsive button text (hidden sm:inline for labels)
+   329→   329→- Clients page: Already card-based layout, added responsive button labels, full-width forms in dialogs
+   330→   330→- Dashboard: Responsive stat card grid (2/3/5 cols), responsive widget grid (1/2/4 cols)
+   331→   331→- Deals page: Made kanban board horizontally scrollable on mobile (overflow-x-auto, min-w-[640px]), increased touch targets to 28px min
+   332→   332→- Analytics: FunnelChart has separate desktop (horizontal) and mobile (vertical) layouts
+   333→   333→- All dialogs: max-h-[90vh] overflow-y-auto for full-width on mobile
+   334→   334→- All interactive elements: minimum 28px touch targets
+   335→   335→
+   336→   336→### Lint
+   337→   337→- `bun run lint` passes with zero errors
+   338→   338→
+   339→   339→Files Created:
+   340→   340→- src/app/admin/templates/page.tsx
+   341→   341→
+   342→   342→Files Modified:
+   343→   343→- src/app/page.tsx (duplicate detection in 3 form handlers)
+   344→   344→- src/lib/i18n.ts (added duplicateWarning translations)
+   345→   345→- src/app/admin/layout.tsx (added MessageSquare import, templates nav item + page title)
+   346→   346→- src/app/admin/page.tsx (rewritten: reminders + widgets + mobile responsive)
+   347→   347→- src/app/admin/leads/page.tsx (rewritten: import/export + tags + telegram/max + templates + mobile cards)
+   348→   348→- src/app/admin/clients/page.tsx (rewritten: import/export + tags + telegram/max + templates + timeline + mobile responsive)
+   349→   349→- src/app/admin/deals/page.tsx (rewritten: mobile horizontal scroll + touch targets)
+   350→   350→- src/app/admin/analytics/page.tsx (rewritten: funnel charts + responsive)
+   351→   351→
+   352→   352→Stage Summary:
+   353→   353→- All 10 frontend features implemented successfully
+   354→   354→- 1 new page created (templates), 8 existing files modified
+   355→   355→- Zero lint errors
+   356→   356→- All pages are mobile responsive with proper card/table alternatives
+   357→   357→---
+   358→   358→Task ID: 2
+   359→   359→Agent: Main Coordinator
+   360→   360→Task: Fix TypeScript errors, verify all features
+   361→   361→
+   362→   362→Work Log:
+   363→   363→- Fixed i18n type system: made t() function generic for proper TypeScript narrowing
+   364→   364→- Fixed import/leads route: changed null to undefined for optional string fields
+   365→   365→- Regenerated Prisma client after schema changes (MessageTemplate model)
+   366→   366→- Force-reset DB with `prisma db push --force-reset` to sync schema
+   367→   367→- Fixed "Смотреть объекты" button: replaced outline Button with transparent <a> tag
+   368→   368→- All APIs verified working: templates (4 defaults), funnel, reminders, export
+   369→   369→
+   370→   370→Stage Summary:
+   371→   371→- TypeScript errors: 0 in src/
+   372→   372→- ESLint: 0 errors
+   373→   373→- All APIs return correct data
+   374→   374→- Landing page HTML contains: FAQ, callback, floating buttons, OG tags, Schema.org
+   375→   375→
+   376→   376→---
+   377→   377→Task ID: 3
+   378→   378→Agent: Main Agent
+   379→   379→Task: Make landing page values dynamic from CRM settings + improve design with animations
+   380→   380→
+   381→   381→Work Log:
+   382→   382→
+   383→   383→### Task 1: Dynamic Settings
+   384→   384→- **Step 1**: Expanded `SETTINGS_KEYS` in `src/app/api/admin/settings/route.ts` — added `phone`, `address`, `max_profile_url`
+   385→   385→- **Step 2**: Expanded `PUBLIC_KEYS` in `src/app/api/settings/route.ts` — added `max_profile_url`, `phone`, `address` (total 9 public keys)
+   386→   386→- **Step 3**: Rewrote settings state in `src/app/page.tsx`:
+   387→   387→  - Removed standalone `cianUrl` state, replaced with `siteSettings` object containing: cianUrl, telegram, maxUrl, vk, instagram, whatsapp, phoneRaw, phone, address, metrikaId
+   388→   388→  - Added `formatPhone()` helper that formats raw phone to `+7 (XXX) XXX-XX-XX`
+   389→   389→  - Settings fetch now populates all fields from `/api/settings` API
+   390→   390→  - Replaced ALL hardcoded values: Telegram links (contact section, footer, floating buttons), Max links (contact section, floating buttons), phone display/link (contact section, footer), address (contact section, footer), VK link (footer), CIAN URL (hero)
+   391→   391→- **Step 4**: Added Yandex Metrika dynamic injection — if `yandex_metrika_id` is set in settings, injects the full Metrika tag.js script into `<head>` with clickmap, trackLinks, accurateTrackBounce
+   392→   392→- **Step 5**: Updated `src/app/admin/settings/page.tsx` — added 2 new settings sections:
+   393→   393→  - "Контакты" section with Phone + Address fields
+   394→   394→  - "Профиль Max" section with Max profile URL field
+   395→   395→
+   396→   396→### Task 2: Design and Animation Enhancements (10 sub-tasks)
+   397→   397→- **A. FadeIn enhanced**: Added scale(0.98) and blur(4px) to hidden state, upgraded to cubic-bezier(0.16, 1, 0.3, 1) easing with 0.8s duration
+   398→   398→- **B. Animated counters**: Created `useCountUp` hook + `StatItem` component for Stats section — numbers animate from 0 to target using easeOutCubic over 1500ms, triggered by IntersectionObserver
+   399→   399→- **C. Hero parallax**: Added `heroParallax` state tracking `scrollY * 0.3`, applied to hero gradient overlay divs via inline transform for depth effect
+   400→   400→- **D. Advantage cards hover**: Added `hover:-translate-y-1` and increased shadow opacity on hover
+   401→   401→- **E. Scroll progress bar**: Added fixed 3px red bar at top of page (z-[60]), width driven by `scrollProgress` state tracking scroll percentage
+   402→   402→- **F. Service cards stagger**: Increased delay from `i * 0.1` to `i * 0.12` for more visible stagger
+   403→   403→- **G. CTA button glow**: Added `btn-glow` CSS class with `subtle-glow` keyframe animation (red pulsing shadow), applied to hero CTA button
+   404→   404→- **H. SectionLabel red line**: Each section label now has a decorative 32px red line above the text via flexbox layout
+   405→   405→- **I. Navbar slide-down**: Added `animate-[slideDown_0.3s_ease-out]` class when navbar becomes visible on scroll, with `slideDown` keyframe in globals.css
+   406→   406→- **J. Back-to-top button**: Added ArrowUp button in floating buttons area, visible only when `scrolled` is true, smooth scrolls to top
+   407→   407→
+   408→   408→### CSS additions (globals.css):
+   409→   409→- `@keyframes subtle-glow` + `.btn-glow` class
+   410→   410→- `@keyframes slideDown` for navbar animation
+   411→   411→
+   412→   412→Stage Summary:
+   413→   413→- All landing page values now come from CRM settings (dynamic)
+   414→   414→- 10 animation/design enhancements implemented
+   415→   415→- Yandex Metrika injected dynamically from settings
+   416→   416→- CRM settings page expanded with phone, address, max_profile_url inputs
+   417→   417→- ESLint: 0 errors
+   418→   418→- Dev server compiles successfully
+   419→   419→
+   420→   420→Files Modified:
+   421→   421→- src/app/api/admin/settings/route.ts (3 new keys)
+   422→   422→- src/app/api/settings/route.ts (3 new public keys)
+   423→   423→- src/app/page.tsx (major rewrite: dynamic settings + 10 animations)
+   424→   424→- src/app/admin/settings/page.tsx (2 new settings sections)
+   425→   425→- src/app/globals.css (2 new keyframe animations)
+   426→   426→---
+   427→   427→Task ID: 3
+   428→   428→Agent: Main Coordinator + full-stack-developer subagent
+   429→   429→Task: Make all landing page settings dynamic from CRM, add animations
+   430→   430→
+   431→   431→Work Log:
+   432→   432→- Added phone, address, max_profile_url to admin settings keys
+   433→   433→- Expanded public /api/settings to expose 9 public keys
+   434→   434→- Replaced all hardcoded values on landing page with siteSettings state:
+   435→   435→  Telegram (3 locations), Max (3 locations), phone (2), address (2), VK (1), CIAN (1)
+   436→   436→- Added formatPhone() helper for phone display formatting
+   437→   437→- Dynamic Yandex Metrika script injection when metrika_id is set
+   438→   438→- Added new settings sections in CRM: "Контакты" (phone, address), "Профиль Max" (URL)
+   439→   439→- Animation enhancements:
+   440→   440→  - Enhanced FadeIn with scale(0.98→1) + blur(4px→0) + cubic-bezier easing
+   441→   441→  - Animated stat counters with useCountUp hook (easeOutCubic, 1.5s)
+   442→   442→  - Hero parallax on scroll (0.3x multiplier on gradient layers)
+   443→   443→  - Card hover lift (-translate-y-1)
+   444→   444→  - Scroll progress bar (3px red, z-60)
+   445→   445→  - CTA glow pulse animation (subtle-glow keyframe)
+   446→   446→  - Section label decorative red line (w-8 h-0.5)
+   447→   447→  - Navbar slideDown animation on scroll
+   448→   448→  - Back-to-top ArrowUp button in floating area
+   449→   449→
+   450→   450→Stage Summary:
+   451→   451→- All landing page links/values now read from /api/settings (client-side)
+   452→   452→- Admin settings page has new fields for phone, address, Max profile
+   453→   453→- 10 animation improvements applied
+   454→   454→- Lint: 0 errors
+   455→   455→---
+   456→   456→Task ID: 8
+   457→   457→Agent: Main Orchestrator
+   458→   458→Task: Add CRM reviews management + dynamic show/hide toggle on landing page
+   459→   459→
+   460→   460→Work Log:
+   461→   461→- Added Review model to Prisma schema (id, name, text, rating, source, isHidden, sortOrder, timestamps)
+   462→   462→- Ran `bunx prisma db push` to sync DB — Review table created successfully
+   463→   463→- Added `show_reviews` to PUBLIC_KEYS in `/api/settings/route.ts`
+   464→   464→- Added `show_reviews` to SETTINGS_KEYS in `/api/admin/settings/route.ts`
+   465→   465→- Created public API `/api/reviews` (GET — visible reviews only, sorted by sortOrder/createdAt)
+   466→   466→- Created admin API `/api/admin/reviews` (GET all, POST create)
+   467→   467→- Created admin API `/api/admin/reviews/[id]` (PUT update, DELETE remove)
+   468→   468→- Added Switch toggle for "Раздел отзывов" to admin settings page with auto-save
+   469→   469→- Fixed missing `Phone` icon import in settings page
+   470→   470→- Created full CRM admin page at `/admin/reviews` with:
+   471→   471→  - Review list with star ratings, source badges, visibility toggle
+   472→   472→  - Create/edit dialog with interactive star rating, source selector, sort order, hide toggle
+   473→   473→  - Delete confirmation dialog
+   474→   474→  - Empty state with message
+   475→   475→- Added "Отзывы" with Star icon to CRM sidebar navigation and PAGE_TITLES
+   476→   476→- Updated landing page `page.tsx`:
+   477→   477→  - Added `showReviews: true` to siteSettings state
+   478→   478→  - Added `dbReviews` state for dynamic review data
+   479→   479→  - Settings fetch now reads `show_reviews` setting
+   480→   480→  - Separate `fetch("/api/reviews")` loads reviews from DB
+   481→   481→  - Reviews section conditionally renders based on `siteSettings.showReviews`
+   482→   482→  - When reviews exist: grid of cards (sm:2col, lg:3col) with stars, quote, name avatar, date
+   483→   483→  - When no reviews: original placeholder message
+   484→   484→  - Nav links conditionally include reviews link based on toggle
+   485→   485→- Browser verified: landing shows reviews, admin CRUD works, toggle hides/shows section dynamically
+   486→   486→
+   487→   487→Stage Summary:
+   488→   488→- Complete review management system in CRM
+   489→   489→- Dynamic show/hide toggle in settings (saves to DB, applies on landing)
+   490→   490→- Reviews display as cards with ratings, names, dates on landing page
+   491→   491→- All API routes functional, lint clean, no errors
+   492→   492→---
+   493→   493→Task ID: 9
+   494→   494→Agent: Main Orchestrator
+   495→   495→Task: Verify Telegram lead notifications + remove exit intent popup
+   496→   496→
+   497→   497→Work Log:
+   498→   498→- Verified that /api/leads already calls sendNotification() which sends to both Telegram and Max
+   499→   499→- Confirmed the notification pipeline: lead POST → sendNotification → sendTelegramNotification + sendMaxNotification
+   500→   500→- Tested form submission from landing page — lead created, notification queries executed (200 response)
+   501→   501→- Removed exit intent popup entirely from page.tsx:
+   502→   502→  - Removed exitIntent translation variable
+   503→   503→  - Removed exitIntentOpen, exitIntentForm, exitIntentLoading state
+   504→   504→  - Removed handleExitIntentSubmit callback
+   505→   505→  - Removed mouseleave event listener useEffect
+   506→   506→  - Removed Exit Intent Dialog JSX (the "Подождите!" popup)
+   507→   507→- Cleaned up leftover comments and blank lines
+   508→   508→- Lint clean, browser verified — no exit intent dialog in DOM, form submission works
+   509→   509→
+   510→   510→Stage Summary:
+   511→   511→- Telegram notifications for leads were ALREADY working — they fire on every lead submission
+   512→   512→- To receive notifications: configure Bot Token and Chat ID in CRM Settings → "Уведомления Telegram"
+   513→   513→- Exit intent popup ("Подождите!") completely removed
+   514→   514→
+   515→   515→---
+   516→   516→Task ID: 1b
+   517→   517→Agent: fullstack-developer
+   518→   518→Task: Cases CRUD API + settings toggles
+   519→   519→
+   520→   520→Work Log:
+   521→   521→- Created `src/app/api/cases/route.ts` — public GET endpoint returning visible cases (isHidden=false), ordered by sortOrder ASC, createdAt DESC
+   522→   522→- Created `src/app/api/admin/cases/route.ts` — admin GET (all cases) + POST (create case with title, text, result, isHidden, sortOrder)
+   523→   523→- Created `src/app/api/admin/cases/[id]/route.ts` — admin PUT (update case) + DELETE (remove case)
+   524→   524→- Created `src/app/admin/cases/page.tsx` — full CRM admin page following reviews pattern:
+   525→   525→  - List of cases with title, text, result badge, visibility toggle, edit/delete buttons
+   526→   526→  - Create/Edit dialog with fields: title, text (Textarea), result, sortOrder, isHidden toggle
+   527→   527→  - Delete confirmation dialog (AlertDialog)
+   528→   528→  - Empty state with Trophy icon
+   529→   529→  - Red theme (bg-red-700) for primary actions
+   530→   530→  - Loading skeleton state
+   531→   531→- Modified `src/app/admin/settings/page.tsx` — added 3 new toggle/input cards BEFORE the reviews toggle:
+   532→   532→  a) "Раздел «Кейсы»" — Switch toggle for `show_cases` setting (auto-saves via fetch)
+   533→   533→  b) "Раздел статистики" — Switch toggle for `show_stats` setting (auto-saves via fetch)
+   534→   534→  c) "Комиссия" — number Input for `commission_rate` with Save button (default "3")
+   535→   535→  - Added Trophy, TrendingUp, Percent icons from lucide-react
+   536→   536→- Modified `src/app/admin/layout.tsx` — added Trophy icon import, "Кейсы" nav item after "Отзывы", "/admin/cases" page title
+   537→   537→- Lint passes clean
+   538→   538→
+   539→   539→Stage Summary:
+   540→   540→- Full cases CRUD is functional (3 API routes: public GET, admin GET/POST, admin PUT/DELETE)
+   541→   541→- Cases admin page at /admin/cases with full CRUD UI
+   542→   542→- Settings page now has Cases toggle, Stats toggle, and Commission input before the Reviews toggle
+   543→   543→- CRM sidebar includes "Кейсы" with Trophy icon between "Отзывы" and "Настройки"
+   544→   544→
+   545→   545→---
+   546→   546→Task ID: 3
+   547→   547→Agent: fullstack-developer
+   548→   548→Task: Create comprehensive CRM guide/documentation page
+   549→   549→
+   550→   550→Work Log:
+   551→   551→- Created src/app/admin/guide/page.tsx — full "use client" guide page with 11 sections
+   552→   552→- Guide covers: Дашборд, Лиды, Клиенты, Сделки, Объекты, Задачи, Аналитика, Шаблоны, Отзывы, Кейсы, Настройки
+   553→   553→- Each section has icon header, sub-headings, bullet lists, status chips, and contextual callout boxes (Tip/Note/Warning)
+   554→   554→- Sticky table of contents sidebar on desktop, horizontal pill nav on mobile
+   555→   555→- Clean layout with max-w-4xl content area, red-700 accents, gray body text, white cards with borders
+   556→   556→- All content written in Russian for the realtor audience
+   557→   557→- Added BookOpen icon import and "Гайд" nav item to admin layout NAV_ITEMS (after "Настройки")
+   558→   558→- Added "/admin/guide": "Гайд по CRM" to PAGE_TITLES
+   559→   559→- Fixed stray Chinese character in deals section (可以选择 → выберите)
+   560→   560→- Lint passes with zero errors
+   561→   561→
+   562→   562→Stage Summary:
+   563→   563→- CRM guide page created at /admin/guide with comprehensive documentation of all features
+   564→   564→- Sidebar updated with "Гайд" link (BookOpen icon, placed last before logout)
+   565→   565→- No other files modified
+   566→   566→
+   567→   567→---
+   568→   568→Task ID: 2
+   569→   569→Agent: fullstack-developer
+   570→   570→Task: Landing page full rewrite — human, personal, authentic tone
+   571→   571→
+   572→   572→Work Log:
+   573→   573→- Rewrote src/lib/i18n.ts completely:
+   574→   574→  - Removed "advantages" section entirely (merged into services)
+   575→   575→  - Removed "exitIntent" section
+   576→   576→  - Renamed "about" to "Как я работаю" with human, first-person copy
+   577→   577→  - Rewrote hero: greeting "Недвижимость в Петербурге", title "Риэлтор" (not "Риэлтор-эксперт"), CTA "Обсудить задачу" (not "Оставить заявку")
+   578→   578→  - Merged services into 4 cards: Покупка, Продажа, Юридическое сопровождение, Новостройки со скидкой
+   579→   579→  - Simplified stats to 3 items: 15+ сделок, 2 года практики, 2% скидка
+   580→   580→  - Rewrote FAQ to 4 human questions (not 6 generic ones)
+   581→   581→  - Simplified contact form (name + phone only, no service type dropdown or comment)
+   582→   582→  - Added "cases" section translations (RU: "Кейсы" / "Результаты работы", EN: "Cases" / "Work Results")
+   583→   583→  - Simplified footer to single line with year and city
+   584→   584→  - Updated all EN translations to match
+   585→   585→
+   586→   586→- Rewrote src/app/page.tsx completely (~450 lines, down from ~1258):
+   587→   587→  - Navbar: logo changed to "РАТНИКОВ" (removed "Личная визитка" and "недвижимость"), removed "Отзывы" from default nav, added conditional "Кейсы" link
+   588→   588→  - Hero: removed photo/Image import, removed 2-column grid, centered content with max-w-2xl, kept dark background + parallax
+   589→   589→  - "Как я работаю" section: centered max-w-3xl, Setl Group mention as info box (not badge), removed partner badge below
+   590→   590→  - "Что я делаю" section: 4 cards in 2x2/4col grid with numbered red icons, replaced old advantages + services sections
+   591→   591→  - NEW Cases section: loads from /api/cases, shows case cards with text + result badge, conditional on showCases + data existence
+   592→   592→  - NEW compact Stats bar: simple 3-stat row on black background, conditional on showStats
+   593→   593→  - Reviews: kept existing implementation with show/hide toggle from settings
+   594→   594→  - FAQ: kept accordion style with 4 rewritten items
+   595→   595→  - Contact: simplified to name+phone form, centered max-w-3xl, added Yandex Maps link below, removed messenger buttons sidebar layout
+   596→   596→  - Footer: stripped to minimal — copyright + city/year only
+   597→   597→  - Added showCases/showStats to siteSettings state, fetched from settings API
+   598→   598→  - Added dbCases state with /api/cases fetch
+   599→   599→  - Removed: Image import, Select/Textarea/SelectContent/SelectItem/SelectTrigger/SelectValue, BarChart3/ShieldCheck/Megaphone/Handshake/Globe icons, useCountUp hook, StatItem component, old advantages section, old about section, old stats section, exit intent popup, hero photo
+   600→   600→  - Kept: FadeIn, SectionLabel, SectionHeading, scroll progress bar, floating Telegram/Max buttons, callback dialog, form submission to /api/leads, sticky navbar, CIAN button, dynamic phone/address, Yandex Metrika, RU/EN toggle
+   601→   601→- Lint passes with zero errors
+   602→   602→
+   603→   603→Stage Summary:
+   604→   604→- Landing page completely rewritten to feel human and personal
+   605→   605→- All AI-sounding generic marketing language replaced with specific, first-person casual copy
+   606→   606→- Page reduced from ~1258 to ~450 lines by removing bloat
+   607→   607→- New features: Cases section (API-driven), compact stats bar, Yandex Maps link
+   608→   608→- Removed: hero photo, advantages section, exit intent, service type dropdown, verbose footer, "Личная визитка" branding
+   609→   609→
+   610→   610→---
+   611→   611→Task ID: 1a
+   612→   612→Agent: fullstack-developer
+   613→   613→Task: CRM features - commission, tasks-linked, gallery, timer, quick entry, Cian quick-add
+   614→   614→
+   615→   615→Work Log:
+   616→   616→- Feature 1 (Commission): Modified deals API PUT handler to auto-calculate commission when stage changes to `closed_won` (reads `commission_rate` from Settings, defaults to 3%). Added `commission` field to Deal interface and display in kanban cards with Percent icon. Added "Комиссия" settings section with `commission_rate` input field (type: number, DollarSign icon).
+   617→   617→- Feature 2 (Tasks linked): Rewrote tasks API to accept/save `leadId` and `dealId` in POST/PUT, include lead/deal relations in GET. Added `leadId` query param filter to GET. Rewrote tasks page with two Select dropdowns ("Привязать к лиду", "Привязать к сделке") in create/edit dialog. Added clickable badges for linked lead (blue) and deal (purple) in task list. Modified leads page to fetch and display linked tasks in the expanded lead detail view with priority dots and status badges.
+   618→   618→- Feature 3 (Photo gallery): Updated properties API to handle `imageUrls` field in POST/PUT. Added photo management section in property edit dialog: grid of thumbnails with delete buttons (using next/image unoptimized), URL input + "Добавить" button. Property cards now show first photo as header thumbnail with photo count badge.
+   619→   619→- Feature 4 (Days-on-market timer): Added `getDaysOnMarket()` helper to properties page. Available properties show a badge: >60 days = red, >30 days = amber, ≤30 days = gray. Format: "X дн." with Clock icon.
+   620→   620→- Feature 5 (Quick mobile lead entry): Added red background quick-add bar at top of leads page with Name + Phone inputs (stacked on mobile, side-by-side on desktop) and "Быстро добавить" button. Enter key advances from name to phone, then submits. Uses /api/leads POST endpoint.
+   621→   621→- Feature 6 (Cian quick-add): Created `mini-services/cian-parser/index.ts` (Bun server on port 3080) with `/parse?url=` endpoint that fetches Cian pages and extracts data via JSON-LD and regex fallbacks. Created `src/app/api/admin/properties/import/route.ts` as Next.js proxy. Added "Импорт с ЦИАН" button to properties page with dialog; on success opens create form pre-filled with extracted data.
+   622→   622→- Fixed LeadRow `toggleExpand` type from `void` to `Promise<void>` to match async implementation.
+   623→   623→- All lint checks pass cleanly.
+   624→   624→
+   625→   625→Stage Summary:
+   626→   626→- 6 CRM features implemented across 10 files modified/created
+   627→   627→- Commission auto-calculates on deal close with configurable rate
+   628→   628→- Tasks now link to leads and deals with visual badges and filtering
+   629→   629→- Properties have photo gallery management with next/image thumbnails
+   630→   630→- Days-on-market timer with color-coded badges
+   631→   631→- Quick lead entry bar optimized for mobile use
+   632→   632→- Cian parser mini-service ready to run with `bun --hot index.ts` in mini-services/cian-parser/
+   633→   633→

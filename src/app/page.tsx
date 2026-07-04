@@ -36,7 +36,6 @@ import {
 import {
   Menu,
   MessageCircle,
-  ChevronDown,
   Phone,
   MapPin,
   Send,
@@ -135,7 +134,6 @@ export default function Home() {
   const nav = t("nav");
   const hero = t("hero");
   const about = t("about");
-  const services = t("services");
   const stats = t("stats");
   const cases = t("cases");
   const reviews = t("reviews");
@@ -337,10 +335,9 @@ export default function Home() {
     }
   }, [callbackForm, locale, contact]);
 
-  /* nav links */
+  /* nav links — no separate services, merged into about */
   const navLinks = [
     { label: nav.about, id: "about" },
-    { label: nav.services, id: "services" },
     ...(siteSettings.showCases && dbCases.length > 0 ? [{ label: cases.label, id: "cases" }] : []),
     ...(siteSettings.showReviews ? [{ label: nav.reviews, id: "reviews" }] : []),
     { label: nav.contact, id: "contact" },
@@ -373,7 +370,7 @@ export default function Home() {
                 scrolled ? "text-foreground" : "text-white"
               }`}
             >
-              РАТНИКОВ
+              {hero.name}
             </span>
           </button>
 
@@ -438,7 +435,7 @@ export default function Home() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] pt-10">
               <SheetTitle className="text-base font-bold tracking-tight mb-8">
-                РАТНИКОВ
+                {hero.name}
               </SheetTitle>
 
               <nav className="flex flex-col gap-1">
@@ -481,7 +478,7 @@ export default function Home() {
       </header>
 
       <main className="flex-1">
-        {/* ═══════════════════ HERO ═══════════════════ */}
+        {/* ═══════════════════ HERO — Portrait + personal text ═══════════════════ */}
         <section
           id="hero"
           className="relative min-h-screen flex items-center bg-[#0A0A0A] overflow-hidden"
@@ -494,124 +491,143 @@ export default function Home() {
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
-            <div className="max-w-2xl mx-auto text-center lg:text-left">
-              <FadeIn>
-                <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
-                  {hero.greeting}
-                </p>
-              </FadeIn>
-
-              <FadeIn delay={0.1}>
-                <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
-                  {hero.name}
-                </h1>
-              </FadeIn>
-
-              <FadeIn delay={0.2}>
-                <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
-                  {hero.title}
-                </p>
-              </FadeIn>
-
-              <FadeIn delay={0.3}>
-                <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
-                  {hero.subtitle}
-                </p>
-              </FadeIn>
-
-              <FadeIn delay={0.4}>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                  <Button
-                    onClick={() => scrollTo("contact")}
-                    className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow btn-glow"
-                  >
-                    {hero.cta}
-                    <ArrowRight size={17} />
-                  </Button>
-                  <a
-                    href={siteSettings.cianUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
-                  >
-                    {hero.cian}
-                    <ExternalLink size={15} />
-                  </a>
+            <div className="flex flex-col lg:flex-row items-center lg:items-center gap-10 lg:gap-16">
+              {/* Portrait — left on desktop, top on mobile */}
+              <FadeIn className="flex-shrink-0">
+                <div className="w-[240px] h-[240px] sm:w-[300px] sm:h-[300px] lg:w-[380px] lg:h-[380px] rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl shadow-black/40">
+                  <img
+                    src="/portrait.jpg"
+                    alt={hero.name}
+                    className="w-full h-full object-cover"
+                    width={640}
+                    height={640}
+                  />
                 </div>
               </FadeIn>
-            </div>
-          </div>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-            <span className="text-white/50 text-[10px] uppercase tracking-[0.25em]">
-              {hero.scroll}
-            </span>
-            <ChevronDown className="text-white/50 animate-bounce" size={18} />
+              {/* Text — right on desktop, below on mobile */}
+              <div className="text-center lg:text-left max-w-xl">
+                <FadeIn>
+                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-5">
+                    {hero.greeting}
+                  </p>
+                </FadeIn>
+
+                <FadeIn delay={0.1}>
+                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+                    {hero.name}
+                  </h1>
+                </FadeIn>
+
+                <FadeIn delay={0.15}>
+                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+                    {hero.role}
+                  </p>
+                </FadeIn>
+
+                <FadeIn delay={0.2}>
+                  <div className="space-y-2 mb-10 max-w-md mx-auto lg:mx-0">
+                    <p className="text-white/60 text-[15px] sm:text-base leading-relaxed flex items-start gap-2.5 justify-center lg:justify-start">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500/80 mt-2 flex-shrink-0" />
+                      {hero.line1}
+                    </p>
+                    <p className="text-white/60 text-[15px] sm:text-base leading-relaxed flex items-start gap-2.5 justify-center lg:justify-start">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500/80 mt-2 flex-shrink-0" />
+                      {hero.line2}
+                    </p>
+                  </div>
+                </FadeIn>
+
+                <FadeIn delay={0.3}>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                    <Button
+                      onClick={() => scrollTo("contact")}
+                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow btn-glow"
+                    >
+                      {hero.cta}
+                      <ArrowRight size={17} />
+                    </Button>
+                    <a
+                      href={siteSettings.cianUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
+                    >
+                      {hero.cian}
+                      <ExternalLink size={15} />
+                    </a>
+                  </div>
+                </FadeIn>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* ═══════════════════ ABOUT / КАК Я РАБОТАЮ ═══════════════════ */}
+        {/* ═══════════════════ ABOUT — merged with services ═══════════════════ */}
         <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn>
               <SectionLabel>{about.label}</SectionLabel>
               <SectionHeading className="mb-6">{about.title}</SectionHeading>
             </FadeIn>
 
             <FadeIn delay={0.1}>
-              <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+              <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-12 max-w-3xl">
                 {about.description}
               </p>
             </FadeIn>
 
-            {/* Setl Group partner mention */}
+            {/* Services grid — compact 2x2 */}
+            <FadeIn delay={0.15} className="mb-12">
+              <h3 className="text-lg font-semibold text-foreground mb-6">
+                {about.servicesTitle}
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+                {about.services.map((item, i) => (
+                  <Card
+                    key={i}
+                    className="group border-gray-200/80 hover:border-red-200 hover:shadow-md hover:shadow-red-700/[0.04] transition-all duration-300 py-0"
+                  >
+                    <CardContent className="p-5 sm:p-6">
+                      <div className="flex items-start gap-3">
+                        <span className="w-2 h-2 rounded-full bg-red-600 mt-2 flex-shrink-0" />
+                        <div>
+                          <h4 className="text-[15px] font-semibold text-foreground mb-2 leading-snug">
+                            {item.title}
+                          </h4>
+                          <p className="text-muted-foreground text-sm leading-relaxed">
+                            {item.text}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </FadeIn>
+
+            {/* Setl Group partner box */}
             <FadeIn delay={0.2}>
               <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
-                  {about.mission}
-                </h3>
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    {about.setlTitle}
+                  </h3>
+                  <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-red-700 bg-red-50 px-2.5 py-1 rounded-md">
+                    {about.partner}
+                  </span>
+                </div>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  {about.missionText}
+                  {about.setText}
                 </p>
               </div>
             </FadeIn>
           </div>
         </section>
 
-        {/* ═══════════════════ SERVICES / ЧТО Я ДЕЛАЮ ═══════════════════ */}
-        <section id="services" className="py-20 sm:py-28 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <FadeIn className="text-center mb-14 sm:mb-16">
-              <SectionLabel>{services.label}</SectionLabel>
-              <SectionHeading>{services.title}</SectionHeading>
-            </FadeIn>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-              {services.items.map((item, i) => (
-                <FadeIn key={i} delay={i * 0.1}>
-                  <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
-                    <CardContent className="p-6 sm:p-8 flex flex-col h-full">
-                      <span className="text-3xl sm:text-4xl font-bold text-red-700/25 group-hover:text-red-700/40 transition-colors duration-300 mb-4 block leading-none">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
-                        {item.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed flex-1">
-                        {item.text}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ═══════════════════ CASES ═══════════════════ */}
         {siteSettings.showCases && dbCases.length > 0 && (
-          <section id="cases" className="py-20 sm:py-28 bg-white">
+          <section id="cases" className="py-20 sm:py-28 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <FadeIn className="text-center mb-14">
                 <SectionLabel>{cases.label}</SectionLabel>
@@ -620,7 +636,7 @@ export default function Home() {
               <div className="grid sm:grid-cols-2 gap-5">
                 {dbCases.map((c, idx) => (
                   <FadeIn key={c.id} delay={idx * 0.08}>
-                    <Card className="bg-gray-50 border-gray-200/60 hover:shadow-md transition-shadow">
+                    <Card className="bg-white border-gray-200/60 hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <p className="text-sm text-foreground/80 leading-relaxed mb-4">{c.text}</p>
                         {c.result && <Badge className="bg-red-50 text-red-700 border-red-200">{c.result}</Badge>}
@@ -842,7 +858,7 @@ export default function Home() {
               </form>
             </FadeIn>
 
-            {/* Contact info & map link below form */}
+            {/* Contact info below form */}
             <FadeIn delay={0.2}>
               <div className="mt-8 flex flex-col sm:flex-row items-center sm:justify-between gap-4 text-muted-foreground text-sm">
                 <div className="flex items-center gap-3">
@@ -864,6 +880,20 @@ export default function Home() {
                   <MapPin className="w-4 h-4" />
                   {locale === "ru" ? "Показать на карте" : "Show on map"}
                 </a>
+              </div>
+            </FadeIn>
+
+            {/* Yandex Map embed */}
+            <FadeIn delay={0.3}>
+              <div className="mt-8 rounded-xl overflow-hidden border border-gray-200/60 shadow-sm">
+                <iframe
+                  title="Yandex Map"
+                  src="https://yandex.ru/map-widget/v1/?ll=30.335098%2C59.934280&z=15&text=%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3"
+                  width="100%"
+                  height={350}
+                  className="border-0"
+                  loading="lazy"
+                />
               </div>
             </FadeIn>
           </div>

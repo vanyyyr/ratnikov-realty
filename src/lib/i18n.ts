@@ -3,53 +3,49 @@ export type Locale = "ru" | "en";
 export const translations = {
   ru: {
     nav: {
-      about: "Как я работаю",
-      services: "Услуги",
+      about: "Обо мне",
       reviews: "Отзывы",
       contact: "Контакты",
       cian: "Объекты на ЦИАН",
     },
     hero: {
-      greeting: "Недвижимость в Петербурге",
+      greeting: "Риэлтор, Санкт-Петербург",
       name: "Илья Ратников",
-      title: "Риэлтор",
-      subtitle:
-        "Помогаю купить, продать или оценить недвижимость в Санкт-Петербурге. Сопровождаю сделку от первого звонка до регистрации права — документы, расчёты, показы.",
-      cta: "Обсудить задачу",
-      cian: "Смотреть объекты",
-      scroll: "Дальше",
+      role: "Помогаю с недвижимостью в Петербурге",
+      line1:
+        "Покупка, продажа, новостройки — от подбора до подписания документов",
+      line2: "Партнёр Setl Group — скидка 2% на все их ЖК",
+      cta: "Написать мне",
+      cian: "Смотреть объекты на ЦИАН",
     },
     about: {
-      label: "Как я работаю",
-      title: "От звонка до регистрации — полностью",
+      label: "Обо мне",
+      title: "Я не агентство — я один человек, который всё делает сам",
       description:
-        "Берёте на себя только решение, я — всё остальное. Подбираю объекты, проверяю юридическую чистоту, веду переговоры, готовлю документы. Если нужно — продаю вашу недвижимость с максимальной выгодой через таргет и закрытые базы.",
-      mission: "Setl Group",
-      missionText:
-        "Партнёр застройщика Setl Group — даю скидку 2% на все их объекты в Петербурге. Актуальные акции, планировки и цены под рукой.",
-      partner: "Партнёр застройщика",
-    },
-    services: {
-      label: "Услуги",
-      title: "Что я делаю",
-      items: [
+        "Звоните или пишете — я подбираю варианты, организую показы, проверяю документы через Росреестр, веду переговоры и сопровождаю до регистрации права собственности. Если продаёте — снимаю профессиональные фото, размещаю на ЦИАН и Авито, запускаю таргет. Вам не нужно ни о чём думать, кроме принятия решения.",
+      servicesTitle: "С чем помогу",
+      services: [
         {
-          title: "Покупка недвижимости",
-          text: "Подбор объектов по вашим критериям — от студий до загородных домов. Показы, сравнение, проверка документов.",
+          title: "Покупка квартиры",
+          text: "Подбор по вашим критериям. Показы, сравнение вариантов, проверка юридической чистоты, сопровождение до регистрации.",
         },
         {
-          title: "Продажа недвижимости",
-          text: "Оценка, профессиональные фото, размещение на ЦИАН и Авито, таргетированная реклама, показы, переговоры.",
+          title: "Продажа квартиры",
+          text: "Оценка, профессиональные фото, размещение на ЦИАН и Авито, таргетированная реклама, показы, переговоры с покупателями.",
+        },
+        {
+          title: "Новостройки Setl Group",
+          text: "Официальный партнёр — даю скидку 2% от стоимости. Помогаю выбрать ЖК, планировку и зафиксировать цену.",
         },
         {
           title: "Юридическое сопровождение",
-          text: "Проверка чистоты объекта через Росреестр и суды. Подготовка договора, регистрация перехода права.",
-        },
-        {
-          title: "Новостройки со скидкой",
-          text: "Партнёр Setl Group — скидка 2% на все объекты холдинга. Помогаю выбрать новостройку и зафиксировать лучшую цену.",
+          text: "Проверка объекта через Росреестр и суды. Подготовка договора, расчёты, регистрация перехода права.",
         },
       ],
+      setlTitle: "Setl Group",
+      setText:
+        "Партнёр застройщика Setl Group (ПЕТРОБЕТОН, Силла, Пelta). Скидка 2% на все их объекты в Петербурге — на квартире за 10 млн это 200 тысяч экономии. Актуальные планировки и цены под рукой.",
+      partner: "Партнёр застройщика",
     },
     stats: {
       label: "Опыт",
@@ -61,50 +57,55 @@ export const translations = {
     },
     cases: {
       label: "Кейсы",
-      title: "Результаты работы",
+      title: "Работа на цифрах",
     },
     reviews: {
       label: "Отзывы",
-      title: "Отзывы клиентов",
+      title: "Что говорят клиенты",
       placeholder:
-        "Здесь появятся отзывы от клиентов. Ваше доверие — лучшая рекомендация.",
+        "Здесь появятся отзывы — пока их нет, но можете спросить моих клиентов напрямую.",
     },
     contact: {
       label: "Связаться",
-      title: "Напишите мне",
-      subtitle: "Расскажите, что нужно — и я предложу решение.",
+      title: "Напишите или позвоните",
+      subtitle: "Расскажите, что ищете — и я предложу варианты.",
       name: "Имя",
       phone: "Телефон",
       submit: "Отправить",
-      success: "Отправлено! Свяжусь с вами в ближайшее время.",
-      error: "Произошла ошибка. Попробуйте ещё раз.",
+      success: "Отправлено! Свяжусь в ближайшее время.",
+      error: "Ошибка. Попробуйте ещё раз.",
       required: "Обязательное поле",
-      duplicateWarning: "Такой номер уже зарегистрирован. Мы свяжемся с вами повторно.",
+      duplicateWarning:
+        "Такой номер уже зарегистрирован. Я свяжусь с вами.",
       callbackButton: "Перезвоните мне",
       callbackTitle: "Обратный звонок",
       callbackDescription: "Оставьте номер — перезвоню в удобное время.",
       callbackSubmit: "Перезвоните",
-      callbackSuccess: "Заявка на звонок отправлена! Я скоро свяжусь с вами.",
+      callbackSuccess: "Заявка отправлена! Скоро свяжусь.",
     },
     faq: {
-      label: "FAQ",
-      title: "Вопросы",
+      label: "Вопросы",
+      title: "Часто спрашивают",
       items: [
         {
-          question: "Сколько стоит ваша помощь?",
-          answer: "Зависит от задачи. При покупке — комиссия от застройщика или продавца (часто для вас бесплатно). При продаже — обсуждается индивидуально. Первая консультация — без оплаты.",
+          question: "Сколько это стоит?",
+          answer:
+            "При покупке с первичного рынка — мне платит застройщик, для вас бесплатно. При покупке вторички — комиссию обычно берёт продавец. При продаже вашей квартиры — обсуждается индивидуально, обычно процент от сделки. Первая консультация без оплаты.",
         },
         {
-          question: "Вы работаете только с Петербургом?",
-          answer: "В основном Санкт-Петербург и Ленинградская область. Но если вопрос сложный — помогу найти коллегу в другом регионе.",
+          question: "Вы только по Петербургу?",
+          answer:
+            "Да, Санкт-Петербург и область. Если нужен другой город — помогу найти надёжного коллегу.",
         },
         {
-          question: "Как быстро можно закрыть сделку?",
-          answer: "Экспресс-сопровождение — 3–5 дней, если покупатель уже найден. Стандартная покупка — 2–3 недели. Продажа с рекламой — от 2 недель до месяца.",
+          question: "Как быстро можно провести сделку?",
+          answer:
+            "Если покупатель уже есть — 3–5 дней на проверку и регистрацию. Если нужно искать — от двух недель. Продажа с рекламой занимает от двух недель до месяца.",
         },
         {
-          question: "Что такое скидка 2% от Setl Group?",
-          answer: "Я — официальный партнёр холдинга Setl Group (ПЕТРОБЕТОН, Силла, Пelta и др.). При покупке через меня вы получаете скидку 2% от стоимости квартиры. На квартире за 10 млн это экономия 200 тысяч.",
+          question: "Что за скидка 2%?",
+          answer:
+            "Я официальный партнёр Setl Group. При покупке любого их ЖК через меня вы получаете скидку 2% от стоимости квартиры. На 10 млн — это 200 000 рублей. Скидка фиксируется в договоре.",
         },
       ],
     },
@@ -118,53 +119,49 @@ export const translations = {
   },
   en: {
     nav: {
-      about: "How I Work",
-      services: "Services",
+      about: "About Me",
       reviews: "Reviews",
       contact: "Contact",
       cian: "Properties on Cian",
     },
     hero: {
-      greeting: "Real Estate in St. Petersburg",
+      greeting: "Realtor, St. Petersburg",
       name: "Ilya Ratnikov",
-      title: "Realtor",
-      subtitle:
-        "I help you buy, sell, or value property in St. Petersburg. I handle the entire deal — from the first call to title registration: documents, calculations, viewings.",
-      cta: "Discuss Your Task",
-      cian: "View Properties",
-      scroll: "Scroll",
+      role: "Helping with real estate in St. Petersburg",
+      line1:
+        "Buying, selling, new builds — from selection to signing documents",
+      line2: "Setl Group partner — 2% discount on all their developments",
+      cta: "Write to me",
+      cian: "View properties on Cian",
     },
     about: {
-      label: "How I Work",
-      title: "From Call to Registration — All of It",
+      label: "About Me",
+      title: "I'm not an agency — I'm one person who does everything myself",
       description:
-        "You only make the decisions, I handle everything else. I find properties, verify legal status, negotiate, and prepare documents. If needed — I sell your property at the best price using targeted ads and closed databases.",
-      mission: "Setl Group",
-      missionText:
-        "Official partner of Setl Group — I offer a 2% discount on all their properties in St. Petersburg. Current promotions, floor plans, and prices at hand.",
-      partner: "Developer Partner",
-    },
-    services: {
-      label: "Services",
-      title: "What I Do",
-      items: [
+        "Call or write — I find options, arrange viewings, check documents through Rosreestr, negotiate, and accompany you to the title registration. If you're selling — I take professional photos, list on Cian and Avito, run targeted ads. You don't have to think about anything except making the decision.",
+      servicesTitle: "How I can help",
+      services: [
         {
-          title: "Buying Property",
-          text: "Finding properties that match your criteria — from studios to country houses. Viewings, comparisons, document checks.",
+          title: "Buying an apartment",
+          text: "Search by your criteria. Viewings, comparing options, legal verification, support through registration.",
         },
         {
-          title: "Selling Property",
-          text: "Valuation, professional photos, listing on Cian and Avito, targeted ads, viewings, negotiations.",
+          title: "Selling an apartment",
+          text: "Valuation, professional photos, listing on Cian and Avito, targeted ads, viewings, buyer negotiations.",
         },
         {
-          title: "Legal Support",
-          text: "Property verification through Rosreestr and courts. Contract preparation, title transfer registration.",
+          title: "Setl Group new builds",
+          text: "Official partner — I give a 2% discount off the price. I help choose the development, floor plan, and lock in the price.",
         },
         {
-          title: "New Builds with Discount",
-          text: "Setl Group partner — 2% discount on all holding properties. I help you choose and lock in the best price.",
+          title: "Legal support",
+          text: "Property check through Rosreestr and courts. Contract preparation, calculations, title transfer registration.",
         },
       ],
+      setlTitle: "Setl Group",
+      setText:
+        "Partner of Setl Group developer (PETROBETON, Silla, Pelta). 2% discount on all their properties in St. Petersburg — on a 10M apartment that's 200K in savings. Current floor plans and prices on hand.",
+      partner: "Developer partner",
     },
     stats: {
       label: "Experience",
@@ -176,50 +173,55 @@ export const translations = {
     },
     cases: {
       label: "Cases",
-      title: "Work Results",
+      title: "Results in numbers",
     },
     reviews: {
       label: "Reviews",
-      title: "Client Reviews",
+      title: "What clients say",
       placeholder:
-        "Client reviews will appear here. Your trust is the best recommendation.",
+        "Reviews will appear here — for now there are none, but you can ask my clients directly.",
     },
     contact: {
-      label: "Contact",
-      title: "Write to Me",
-      subtitle: "Tell me what you need — I'll suggest a solution.",
+      label: "Get in touch",
+      title: "Write or call",
+      subtitle: "Tell me what you're looking for — and I'll suggest options.",
       name: "Name",
       phone: "Phone",
       submit: "Send",
       success: "Sent! I'll get back to you soon.",
-      error: "Something went wrong. Please try again.",
+      error: "Error. Please try again.",
       required: "Required field",
-      duplicateWarning: "This number is already registered. We'll contact you again.",
-      callbackButton: "Call Me Back",
+      duplicateWarning:
+        "This number is already registered. I'll contact you.",
+      callbackButton: "Call me back",
       callbackTitle: "Callback",
-      callbackDescription: "Leave your number — I'll call you at a convenient time.",
-      callbackSubmit: "Call Me",
-      callbackSuccess: "Callback request sent! I'll contact you soon.",
+      callbackDescription: "Leave your number — I'll call at a convenient time.",
+      callbackSubmit: "Call me",
+      callbackSuccess: "Request sent! I'll be in touch soon.",
     },
     faq: {
-      label: "FAQ",
-      title: "Questions",
+      label: "Questions",
+      title: "Frequently asked",
       items: [
         {
-          question: "How much do you charge?",
-          answer: "Depends on the task. For buying — commission from the developer or seller (often free for you). For selling — discussed individually. First consultation is free.",
+          question: "How much does it cost?",
+          answer:
+            "When buying from a developer — they pay me, it's free for you. When buying resale — the seller usually pays the commission. When selling your apartment — discussed individually, usually a percentage of the deal. First consultation is free.",
         },
         {
-          question: "Do you only work with St. Petersburg?",
-          answer: "Mostly St. Petersburg and Leningrad Oblast. But for complex cases I can find a colleague in another region.",
+          question: "Do you only work in St. Petersburg?",
+          answer:
+            "Yes, St. Petersburg and the region. If you need another city — I'll help find a reliable colleague.",
         },
         {
-          question: "How fast can a deal close?",
-          answer: "Express support — 3–5 days if the buyer is already found. Standard purchase — 2–3 weeks. Selling with advertising — 2 weeks to a month.",
+          question: "How fast can a deal be done?",
+          answer:
+            "If the buyer is already found — 3–5 days for verification and registration. If we need to search — from two weeks. Selling with advertising takes from two weeks to a month.",
         },
         {
-          question: "What's the 2% Setl Group discount?",
-          answer: "I'm an official partner of Setl Group (PETROBETON, Silla, Pelta, etc.). When you buy through me, you get a 2% discount on the apartment price. On a 10M apartment, that's 200K in savings.",
+          question: "What's the 2% discount?",
+          answer:
+            "I'm an official Setl Group partner. When you buy any of their developments through me, you get a 2% discount off the apartment price. On 10M, that's 200,000 rubles. The discount is fixed in the contract.",
         },
       ],
     },

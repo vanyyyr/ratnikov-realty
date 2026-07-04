@@ -283,8 +283,8 @@ export default function LeadsPage() {
   };
 
   const handleQuickAdd = async () => {
-    if (!quickName.trim() || !quickPhone.trim()) {
-      toast.error("Введите имя и телефон");
+    if (!quickPhone.trim()) {
+      toast.error("Введите хотя бы номер телефона");
       return;
     }
     setQuickAdding(true);
@@ -292,7 +292,10 @@ export default function LeadsPage() {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: quickName.trim(), phone: quickPhone.trim() }),
+        body: JSON.stringify({
+          name: quickName.trim() || quickPhone.trim(),
+          phone: quickPhone.trim(),
+        }),
       });
       if (res.ok) {
         toast.success("Лид добавлен");
@@ -341,29 +344,23 @@ export default function LeadsPage() {
           </span>
           <div className="flex flex-col sm:flex-row gap-2 flex-1">
             <Input
-              value={quickName}
-              onChange={(e) => setQuickName(e.target.value)}
-              placeholder="Имя"
+              value={quickPhone}
+              onChange={(e) => setQuickPhone(e.target.value)}
+              placeholder="Телефон *"
+              type="tel"
               className="bg-white/95 border-0 h-9 text-sm"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  if (quickName.trim() && !quickPhone.trim()) {
-                    // Focus phone field
-                    document.getElementById("quick-phone-input")?.focus();
-                  } else {
-                    handleQuickAdd();
-                  }
+                  handleQuickAdd();
                 }
               }}
             />
             <Input
-              id="quick-phone-input"
-              value={quickPhone}
-              onChange={(e) => setQuickPhone(e.target.value)}
-              placeholder="Телефон"
-              type="tel"
-              className="bg-white/95 border-0 h-9 text-sm"
+              value={quickName}
+              onChange={(e) => setQuickName(e.target.value)}
+              placeholder="Имя (необязательно)"
+              className="bg-white/95 border-0 h-9 text-sm hidden sm:block"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -375,7 +372,7 @@ export default function LeadsPage() {
           <Button
             className="bg-white text-red-700 hover:bg-red-50 font-medium h-9 flex-shrink-0"
             onClick={handleQuickAdd}
-            disabled={quickAdding || !quickName.trim() || !quickPhone.trim()}
+            disabled={quickAdding || !quickPhone.trim()}
           >
             {quickAdding ? (
               <div className="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />

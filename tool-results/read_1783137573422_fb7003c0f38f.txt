@@ -1,0 +1,926 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback, useRef } from "react";
+     4→import { Button } from "@/components/ui/button";
+     5→import { Input } from "@/components/ui/input";
+     6→import { Textarea } from "@/components/ui/textarea";
+     7→import { Badge } from "@/components/ui/badge";
+     8→import { Skeleton } from "@/components/ui/skeleton";
+     9→import { Card } from "@/components/ui/card";
+    10→import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from "@/components/ui/select";
+    18→import {
+    19→  Table,
+    20→  TableBody,
+    21→  TableCell,
+    22→  TableHead,
+    23→  TableHeader,
+    24→  TableRow,
+    25→} from "@/components/ui/table";
+    26→import {
+    27→  AlertDialog,
+    28→  AlertDialogAction,
+    29→  AlertDialogCancel,
+    30→  AlertDialogContent,
+    31→  AlertDialogDescription,
+    32→  AlertDialogFooter,
+    33→  AlertDialogHeader,
+    34→  AlertDialogTitle,
+    35→  AlertDialogTrigger,
+    36→} from "@/components/ui/alert-dialog";
+    37→import {
+    38→  Dialog,
+    39→  DialogContent,
+    40→  DialogHeader,
+    41→  DialogTitle,
+    42→  DialogFooter,
+    43→} from "@/components/ui/dialog";
+    44→import {
+    45→  Popover,
+    46→  PopoverContent,
+    47→  PopoverTrigger,
+    48→} from "@/components/ui/popover";
+    49→import { toast } from "sonner";
+    50→import {
+    51→  Search,
+    52→  ChevronDown,
+    53→  ChevronRight,
+    54→  Trash2,
+    55→  Phone,
+    56→  UserCircle,
+    57→  Save,
+    58→  X,
+    59→  Download,
+    60→  Upload,
+    61→  Send,
+    62→  Copy,
+    63→  Tag,
+    64→  MessageSquare,
+    65→  CheckSquare,
+    66→  Plus,
+    67→} from "lucide-react";
+    68→
+    69→interface Lead {
+    70→  id: string;
+    71→  name: string;
+    72→  phone: string;
+    73→  serviceType: string | null;
+    74→  comment: string | null;
+    75→  status: string;
+    76→  source: string | null;
+    77→  createdAt: string;
+    78→  updatedAt: string;
+    79→  notes: string | null;
+    80→  tags: string | null;
+    81→}
+    82→
+    83→interface MessageTemplate {
+    84→  id: string;
+    85→  name: string;
+    86→  content: string;
+    87→  category: string;
+    88→}
+    89→
+    90→const STATUS_MAP: Record<string, { label: string; color: string }> = {
+    91→  new: { label: "Новый", color: "bg-blue-100 text-blue-700" },
+    92→  contacted: { label: "Контактированный", color: "bg-yellow-100 text-yellow-700" },
+    93→  qualified: { label: "Квалифицированный", color: "bg-green-100 text-green-700" },
+    94→  lost: { label: "Потерянный", color: "bg-red-100 text-red-700" },
+    95→};
+    96→
+    97→const PREDEFINED_TAGS = ["VIP", "Покупатель", "Продавец", "Инвестор", "Арендатор", "Новостройка", "Вторичный рынок"];
+    98→
+    99→const TAG_PALETTE = [
+   100→  { bg: "bg-red-100", text: "text-red-700" },
+   101→  { bg: "bg-blue-100", text: "text-blue-700" },
+   102→  { bg: "bg-green-100", text: "text-green-700" },
+   103→  { bg: "bg-amber-100", text: "text-amber-700" },
+   104→  { bg: "bg-purple-100", text: "text-purple-700" },
+   105→  { bg: "bg-pink-100", text: "text-pink-700" },
+   106→];
+   107→
+   108→function getTagColor(tag: string) {
+   109→  let hash = 0;
+   110→  for (let i = 0; i < tag.length; i++) {
+   111→    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+   112→  }
+   113→  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
+   114→}
+   115→
+   116→function parseTags(tags: string | null): string[] {
+   117→  if (!tags) return [];
+   118→  try {
+   119→    const parsed = JSON.parse(tags);
+   120→    return Array.isArray(parsed) ? parsed : [];
+   121→  } catch {
+   122→    return tags.split(",").map((t) => t.trim()).filter(Boolean);
+   123→  }
+   124→}
+   125→
+   126→export default function LeadsPage() {
+   127→  const [leads, setLeads] = useState<Lead[]>([]);
+   128→  const [loading, setLoading] = useState(true);
+   129→  const [search, setSearch] = useState("");
+   130→  const [statusFilter, setStatusFilter] = useState("all");
+   131→  const [tagFilter, setTagFilter] = useState("");
+   132→  const [expandedId, setExpandedId] = useState<string | null>(null);
+   133→  const [editNotes, setEditNotes] = useState<Record<string, string>>({});
+   134→  const [editTags, setEditTags] = useState<Record<string, string>>({});
+   135→  const [savingNotes, setSavingNotes] = useState<string | null>(null);
+   136→  const [importOpen, setImportOpen] = useState(false);
+   137→  const [importFile, setImportFile] = useState<File | null>(null);
+   138→  const [importing, setImporting] = useState(false);
+   139→  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+   140→  const [leadTasks, setLeadTasks] = useState<Record<string, { id: string; title: string; status: string; priority: string }[]>>({});
+   141→  const fileInputRef = useRef<HTMLInputElement>(null);
+   142→
+   143→  // Quick add lead state
+   144→  const [quickName, setQuickName] = useState("");
+   145→  const [quickPhone, setQuickPhone] = useState("");
+   146→  const [quickAdding, setQuickAdding] = useState(false);
+   147→
+   148→  const fetchLeads = useCallback(async () => {
+   149→    try {
+   150→      const params = new URLSearchParams();
+   151→      if (statusFilter !== "all") params.set("status", statusFilter);
+   152→      if (search) params.set("search", search);
+   153→      if (tagFilter) params.set("tags", tagFilter);
+   154→      const res = await fetch(`/api/admin/leads?${params}`);
+   155→      if (res.ok) {
+   156→        const json = await res.json();
+   157→        setLeads(json.leads || json);
+   158→      }
+   159→    } catch {
+   160→      // silent
+   161→    } finally {
+   162→      setLoading(false);
+   163→    }
+   164→  }, [statusFilter, search, tagFilter]);
+   165→
+   166→  useEffect(() => {
+   167→    setLoading(true);
+   168→    fetchLeads();
+   169→  }, [fetchLeads]);
+   170→
+   171→  const handleStatusChange = async (id: string, newStatus: string) => {
+   172→    try {
+   173→      const res = await fetch("/api/admin/leads", {
+   174→        method: "PUT",
+   175→        headers: { "Content-Type": "application/json" },
+   176→        body: JSON.stringify({ id, status: newStatus }),
+   177→      });
+   178→      if (res.ok) {
+   179→        toast.success("Статус обновлён");
+   180→        fetchLeads();
+   181→      }
+   182→    } catch {
+   183→      toast.error("Ошибка обновления");
+   184→    }
+   185→  };
+   186→
+   187→  const handleDelete = async (id: string) => {
+   188→    try {
+   189→      const res = await fetch(`/api/admin/leads?id=${id}`, { method: "DELETE" });
+   190→      if (res.ok) {
+   191→        toast.success("Лид удалён");
+   192→        fetchLeads();
+   193→      }
+   194→    } catch {
+   195→      toast.error("Ошибка удаления");
+   196→    }
+   197→  };
+   198→
+   199→  const handleSaveNotes = async (id: string) => {
+   200→    setSavingNotes(id);
+   201→    try {
+   202→      const res = await fetch("/api/admin/leads", {
+   203→        method: "PUT",
+   204→        headers: { "Content-Type": "application/json" },
+   205→        body: JSON.stringify({ id, notes: editNotes[id] || "", tags: editTags[id] || "[]" }),
+   206→      });
+   207→      if (res.ok) {
+   208→        toast.success("Сохранено");
+   209→        fetchLeads();
+   210→      }
+   211→    } catch {
+   212→      toast.error("Ошибка сохранения");
+   213→    } finally {
+   214→      setSavingNotes(null);
+   215→    }
+   216→  };
+   217→
+   218→  const toggleExpand = async (id: string) => {
+   219→    if (expandedId === id) {
+   220→      setExpandedId(null);
+   221→    } else {
+   222→      setExpandedId(id);
+   223→      const lead = leads.find((l) => l.id === id);
+   224→      if (lead) {
+   225→        setEditNotes((prev) => ({ ...prev, [id]: lead.notes || "" }));
+   226→        setEditTags((prev) => ({ ...prev, [id]: parseTags(lead.tags).join(", ") }));
+   227→      }
+   228→      // Fetch tasks for this lead
+   229→      try {
+   230→        const res = await fetch(`/api/admin/tasks?leadId=${id}`);
+   231→        if (res.ok) {
+   232→          const tasks = await res.json();
+   233→          setLeadTasks((prev) => ({ ...prev, [id]: tasks }));
+   234→        }
+   235→      } catch {
+   236→        // silent
+   237→      }
+   238→    }
+   239→  };
+   240→
+   241→  const handleImport = async () => {
+   242→    if (!importFile) return;
+   243→    setImporting(true);
+   244→    try {
+   245→      const formData = new FormData();
+   246→      formData.append("file", importFile);
+   247→      const res = await fetch("/api/admin/import/leads", {
+   248→        method: "POST",
+   249→        body: formData,
+   250→      });
+   251→      if (res.ok) {
+   252→        const json = await res.json();
+   253→        toast.success(`Импортировано: ${json.count} лидов`);
+   254→        setImportOpen(false);
+   255→        setImportFile(null);
+   256→        fetchLeads();
+   257→      } else {
+   258→        toast.error("Ошибка импорта");
+   259→      }
+   260→    } catch {
+   261→      toast.error("Ошибка импорта");
+   262→    } finally {
+   263→      setImporting(false);
+   264→    }
+   265→  };
+   266→
+   267→  const fetchTemplates = async () => {
+   268→    try {
+   269→      const res = await fetch("/api/admin/templates");
+   270→      if (res.ok) {
+   271→        const json = await res.json();
+   272→        setTemplates(Array.isArray(json) ? json : json.templates || []);
+   273→      }
+   274→    } catch {
+   275→      // silent
+   276→    }
+   277→  };
+   278→
+   279→  const copyTemplate = async (template: MessageTemplate, leadName: string) => {
+   280→    const text = template.content.replace(/\{name\}/gi, leadName);
+   281→    await navigator.clipboard.writeText(text);
+   282→    toast.success("Шаблон скопирован");
+   283→  };
+   284→
+   285→  const handleQuickAdd = async () => {
+   286→    if (!quickName.trim() || !quickPhone.trim()) {
+   287→      toast.error("Введите имя и телефон");
+   288→      return;
+   289→    }
+   290→    setQuickAdding(true);
+   291→    try {
+   292→      const res = await fetch("/api/leads", {
+   293→        method: "POST",
+   294→        headers: { "Content-Type": "application/json" },
+   295→        body: JSON.stringify({ name: quickName.trim(), phone: quickPhone.trim() }),
+   296→      });
+   297→      if (res.ok) {
+   298→        toast.success("Лид добавлен");
+   299→        setQuickName("");
+   300→        setQuickPhone("");
+   301→        fetchLeads();
+   302→      } else {
+   303→        toast.error("Ошибка добавления");
+   304→      }
+   305→    } catch {
+   306→      toast.error("Ошибка добавления");
+   307→    } finally {
+   308→      setQuickAdding(false);
+   309→    }
+   310→  };
+   311→
+   312→  const getPhoneDigits = (phone: string) => phone.replace(/\D/g, "");
+   313→
+   314→  const formatDate = (dateStr: string) => {
+   315→    return new Date(dateStr).toLocaleDateString("ru-RU", {
+   316→      day: "2-digit",
+   317→      month: "2-digit",
+   318→      year: "numeric",
+   319→      hour: "2-digit",
+   320→      minute: "2-digit",
+   321→    });
+   322→  };
+   323→
+   324→  const getServiceLabel = (type: string | null) => {
+   325→    const map: Record<string, string> = {
+   326→      buy: "Покупка",
+   327→      sell: "Продажа",
+   328→      consultation: "Консультация",
+   329→      newbuild: "Новостройки",
+   330→    };
+   331→    return type ? map[type] || type : "—";
+   332→  };
+   333→
+   334→  return (
+   335→    <div className="space-y-4">
+   336→      {/* Quick add lead bar */}
+   337→      <div className="bg-red-700 -mx-4 sm:-mx-0 px-4 py-3 rounded-lg sm:rounded-xl">
+   338→        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+   339→          <span className="text-white text-sm font-medium hidden sm:block flex-shrink-0">
+   340→            Быстрое добавление:
+   341→          </span>
+   342→          <div className="flex flex-col sm:flex-row gap-2 flex-1">
+   343→            <Input
+   344→              value={quickName}
+   345→              onChange={(e) => setQuickName(e.target.value)}
+   346→              placeholder="Имя"
+   347→              className="bg-white/95 border-0 h-9 text-sm"
+   348→              onKeyDown={(e) => {
+   349→                if (e.key === "Enter") {
+   350→                  e.preventDefault();
+   351→                  if (quickName.trim() && !quickPhone.trim()) {
+   352→                    // Focus phone field
+   353→                    document.getElementById("quick-phone-input")?.focus();
+   354→                  } else {
+   355→                    handleQuickAdd();
+   356→                  }
+   357→                }
+   358→              }}
+   359→            />
+   360→            <Input
+   361→              id="quick-phone-input"
+   362→              value={quickPhone}
+   363→              onChange={(e) => setQuickPhone(e.target.value)}
+   364→              placeholder="Телефон"
+   365→              type="tel"
+   366→              className="bg-white/95 border-0 h-9 text-sm"
+   367→              onKeyDown={(e) => {
+   368→                if (e.key === "Enter") {
+   369→                  e.preventDefault();
+   370→                  handleQuickAdd();
+   371→                }
+   372→              }}
+   373→            />
+   374→          </div>
+   375→          <Button
+   376→            className="bg-white text-red-700 hover:bg-red-50 font-medium h-9 flex-shrink-0"
+   377→            onClick={handleQuickAdd}
+   378→            disabled={quickAdding || !quickName.trim() || !quickPhone.trim()}
+   379→          >
+   380→            {quickAdding ? (
+   381→              <div className="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
+   382→            ) : (
+   383→              <Plus className="w-4 h-4 sm:mr-1" />
+   384→            )}
+   385→            <span className="hidden sm:inline">Быстро добавить</span>
+   386→            <span className="sm:hidden">Добавить</span>
+   387→          </Button>
+   388→        </div>
+   389→      </div>
+   390→
+   391→      {/* Filters */}
+   392→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   393→        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
+   394→          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+   395→            <TabsList className="overflow-x-auto">
+   396→              <TabsTrigger value="all">Все</TabsTrigger>
+   397→              <TabsTrigger value="new">Новые</TabsTrigger>
+   398→              <TabsTrigger value="contacted">Контактированные</TabsTrigger>
+   399→              <TabsTrigger value="qualified">Квалифицированные</TabsTrigger>
+   400→              <TabsTrigger value="lost">Потерянные</TabsTrigger>
+   401→            </TabsList>
+   402→          </Tabs>
+   403→          <Select value={tagFilter} onValueChange={(v) => setTagFilter(v === "__all__" ? "" : v)}>
+   404→            <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm">
+   405→              <SelectValue placeholder="Все теги" />
+   406→            </SelectTrigger>
+   407→            <SelectContent>
+   408→              <SelectItem value="__all__">Все теги</SelectItem>
+   409→              {PREDEFINED_TAGS.map((tag) => (
+   410→                <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+   411→              ))}
+   412→            </SelectContent>
+   413→          </Select>
+   414→        </div>
+   415→        <div className="flex items-center gap-2 w-full sm:w-auto">
+   416→          <div className="relative flex-1 sm:w-64">
+   417→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+   418→            <Input
+   419→              placeholder="Поиск по имени или телефону..."
+   420→              value={search}
+   421→              onChange={(e) => setSearch(e.target.value)}
+   422→              className="pl-9"
+   423→            />
+   424→          </div>
+   425→          <Button variant="outline" size="sm" onClick={() => window.open("/api/admin/export/leads")}>
+   426→            <Download className="w-4 h-4 sm:mr-1" />
+   427→            <span className="hidden sm:inline">Экспорт CSV</span>
+   428→          </Button>
+   429→          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+   430→            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+   431→              <Upload className="w-4 h-4 sm:mr-1" />
+   432→              <span className="hidden sm:inline">Импорт CSV</span>
+   433→            </Button>
+   434→            <DialogContent className="sm:max-w-md">
+   435→              <DialogHeader>
+   436→                <DialogTitle>Импорт лидов из CSV</DialogTitle>
+   437→              </DialogHeader>
+   438→              <div className="space-y-4">
+   439→                <Input
+   440→                  ref={fileInputRef}
+   441→                  type="file"
+   442→                  accept=".csv"
+   443→                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+   444→                />
+   445→                <p className="text-xs text-gray-400">
+   446→                  Формат: Name, Phone, ServiceType, Status, Source, Comment
+   447→                </p>
+   448→              </div>
+   449→              <DialogFooter>
+   450→                <Button variant="outline" onClick={() => setImportOpen(false)}>Отмена</Button>
+   451→                <Button
+   452→                  className="bg-red-700 hover:bg-red-800"
+   453→                  onClick={handleImport}
+   454→                  disabled={!importFile || importing}
+   455→                >
+   456→                  {importing ? "Импорт..." : "Импортировать"}
+   457→                </Button>
+   458→              </DialogFooter>
+   459→            </DialogContent>
+   460→          </Dialog>
+   461→        </div>
+   462→      </div>
+   463→
+   464→      {/* Table - desktop */}
+   465→      <Card>
+   466→        {loading ? (
+   467→          <div className="p-4 space-y-3">
+   468→            {[...Array(5)].map((_, i) => (
+   469→              <Skeleton key={i} className="h-12 w-full" />
+   470→            ))}
+   471→          </div>
+   472→        ) : leads.length === 0 ? (
+   473→          <div className="py-16 text-center text-gray-400">
+   474→            <UserCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+   475→            <p className="text-sm">Лиды не найдены</p>
+   476→          </div>
+   477→        ) : (
+   478→          <>
+   479→            {/* Desktop table */}
+   480→            <div className="hidden md:block overflow-x-auto">
+   481→              <Table>
+   482→                <TableHeader>
+   483→                  <TableRow>
+   484→                    <TableHead className="w-8"></TableHead>
+   485→                    <TableHead>Имя</TableHead>
+   486→                    <TableHead>Телефон</TableHead>
+   487→                    <TableHead>Услуга</TableHead>
+   488→                    <TableHead>Теги</TableHead>
+   489→                    <TableHead>Статус</TableHead>
+   490→                    <TableHead>Дата</TableHead>
+   491→                    <TableHead className="w-10"></TableHead>
+   492→                  </TableRow>
+   493→                </TableHeader>
+   494→                <TableBody>
+   495→                  {leads.map((lead) => {
+   496→                    const isExpanded = expandedId === lead.id;
+   497→                    const statusInfo = STATUS_MAP[lead.status] || STATUS_MAP.new;
+   498→                    const tags = parseTags(lead.tags);
+   499→                    return (
+   500→                      <LeadRow
+   501→                        key={lead.id}
+   502→                        lead={lead}
+   503→                        isExpanded={isExpanded}
+   504→                        statusInfo={statusInfo}
+   505→                        tags={tags}
+   506→                        expandedId={expandedId}
+   507→                        editNotes={editNotes}
+   508→                        editTags={editTags}
+   509→                        savingNotes={savingNotes}
+   510→                        toggleExpand={toggleExpand}
+   511→                        handleStatusChange={handleStatusChange}
+   512→                        handleDelete={handleDelete}
+   513→                        handleSaveNotes={handleSaveNotes}
+   514→                        setEditNotes={setEditNotes}
+   515→                        setEditTags={setEditTags}
+   516→                        formatDate={formatDate}
+   517→                        getServiceLabel={getServiceLabel}
+   518→                        getPhoneDigits={getPhoneDigits}
+   519→                        fetchTemplates={fetchTemplates}
+   520→                        templates={templates}
+   521→                        copyTemplate={copyTemplate}
+   522→                      />
+   523→                    );
+   524→                  })}
+   525→                </TableBody>
+   526→              </Table>
+   527→            </div>
+   528→
+   529→            {/* Mobile cards */}
+   530→            <div className="md:hidden space-y-3 p-3">
+   531→              {leads.map((lead) => {
+   532→                const statusInfo = STATUS_MAP[lead.status] || STATUS_MAP.new;
+   533→                const tags = parseTags(lead.tags);
+   534→                const phoneDigits = getPhoneDigits(lead.phone);
+   535→                return (
+   536→                  <Card key={lead.id} className="p-4 space-y-3">
+   537→                    <div className="flex items-start justify-between">
+   538→                      <div className="min-w-0">
+   539→                        <h3 className="font-medium text-sm truncate">{lead.name}</h3>
+   540→                        <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+   541→                          <Phone className="w-3.5 h-3.5" />
+   542→                          <a href={`tel:${lead.phone}`} className="hover:text-red-700">{lead.phone}</a>
+   543→                        </div>
+   544→                      </div>
+   545→                      <Badge variant="secondary" className={`text-xs flex-shrink-0 ${statusInfo.color}`}>
+   546→                        {statusInfo.label}
+   547→                      </Badge>
+   548→                    </div>
+   549→
+   550→                    {tags.length > 0 && (
+   551→                      <div className="flex flex-wrap gap-1">
+   552→                        {tags.map((tag) => {
+   553→                          const c = getTagColor(tag);
+   554→                          return (
+   555→                            <Badge key={tag} variant="secondary" className={`text-[10px] ${c.bg} ${c.text}`}>{tag}</Badge>
+   556→                          );
+   557→                        })}
+   558→                      </div>
+   559→                    )}
+   560→
+   561→                    <div className="flex items-center justify-between text-xs text-gray-400">
+   562→                      <span>{getServiceLabel(lead.serviceType)}</span>
+   563→                      <span>{formatDate(lead.createdAt)}</span>
+   564→                    </div>
+   565→
+   566→                    <div className="flex items-center gap-1 pt-2 border-t border-gray-100">
+   567→                      {phoneDigits && (
+   568→                        <Button variant="ghost" size="sm" className="h-9 text-xs" asChild>
+   569→                          <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer">
+   570→                            <Send className="w-3.5 h-3.5 mr-1" /> Telegram
+   571→                          </a>
+   572→                        </Button>
+   573→                      )}
+   574→                      <Button variant="ghost" size="sm" className="h-9 text-xs" asChild>
+   575→                        <a href="https://max.ru/" target="_blank" rel="noopener noreferrer">
+   576→                          Max
+   577→                        </a>
+   578→                      </Button>
+   579→                      <div className="ml-auto flex gap-1">
+   580→                        <Popover>
+   581→                          <PopoverTrigger asChild>
+   582→                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={fetchTemplates}>
+   583→                              <MessageSquare className="w-4 h-4 text-gray-400" />
+   584→                            </Button>
+   585→                          </PopoverTrigger>
+   586→                          <PopoverContent className="w-64 p-2" align="end">
+   587→                            <p className="text-xs font-semibold text-gray-600 px-2 pb-2">Шаблоны</p>
+   588→                            {templates.length === 0 && <p className="text-xs text-gray-400 px-2">Нет шаблонов</p>}
+   589→                            {templates.map((t) => (
+   590→                              <button
+   591→                                key={t.id}
+   592→                                className="w-full text-left px-2 py-1.5 rounded-md hover:bg-gray-100 text-xs transition-colors"
+   593→                                onClick={() => copyTemplate(t, lead.name)}
+   594→                              >
+   595→                                <span className="font-medium">{t.name}</span>
+   596→                                <p className="text-gray-400 truncate mt-0.5">{t.content}</p>
+   597→                              </button>
+   598→                            ))}
+   599→                          </PopoverContent>
+   600→                        </Popover>
+   601→                        <AlertDialog>
+   602→                          <AlertDialogTrigger asChild>
+   603→                            <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-600">
+   604→                              <Trash2 className="w-4 h-4" />
+   605→                            </Button>
+   606→                          </AlertDialogTrigger>
+   607→                          <AlertDialogContent>
+   608→                            <AlertDialogHeader>
+   609→                              <AlertDialogTitle>Удалить лид?</AlertDialogTitle>
+   610→                              <AlertDialogDescription>
+   611→                                Лид &quot;{lead.name}&quot; будет удалён навсегда.
+   612→                              </AlertDialogDescription>
+   613→                            </AlertDialogHeader>
+   614→                            <AlertDialogFooter>
+   615→                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+   616→                              <AlertDialogAction onClick={() => handleDelete(lead.id)} className="bg-red-700 hover:bg-red-800">Удалить</AlertDialogAction>
+   617→                            </AlertDialogFooter>
+   618→                          </AlertDialogContent>
+   619→                        </AlertDialog>
+   620→                      </div>
+   621→                    </div>
+   622→                  </Card>
+   623→                );
+   624→              })}
+   625→            </div>
+   626→          </>
+   627→        )}
+   628→      </Card>
+   629→
+   630→      {leads.length > 0 && (
+   631→        <p className="text-xs text-gray-400 text-right">
+   632→          Всего: {leads.length} лидов
+   633→        </p>
+   634→      )}
+   635→    </div>
+   636→  );
+   637→}
+   638→
+   639→function LeadRow({
+   640→  lead,
+   641→  isExpanded,
+   642→  statusInfo,
+   643→  tags,
+   644→  expandedId,
+   645→  editNotes,
+   646→  editTags,
+   647→  savingNotes,
+   648→  toggleExpand,
+   649→  handleStatusChange,
+   650→  handleDelete,
+   651→  handleSaveNotes,
+   652→  setEditNotes,
+   653→  setEditTags,
+   654→  formatDate,
+   655→  getServiceLabel,
+   656→  getPhoneDigits,
+   657→  fetchTemplates,
+   658→  templates,
+   659→  copyTemplate,
+   660→  leadTasks,
+   661→}: {
+   662→  lead: Lead;
+   663→  isExpanded: boolean;
+   664→  statusInfo: { label: string; color: string };
+   665→  tags: string[];
+   666→  expandedId: string | null;
+   667→  editNotes: Record<string, string>;
+   668→  editTags: Record<string, string>;
+   669→  savingNotes: string | null;
+   670→  toggleExpand: (id: string) => Promise<void>;
+   671→  handleStatusChange: (id: string, status: string) => Promise<void>;
+   672→  handleDelete: (id: string) => Promise<void>;
+   673→  handleSaveNotes: (id: string) => Promise<void>;
+   674→  setEditNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+   675→  setEditTags: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+   676→  formatDate: (d: string) => string;
+   677→  getServiceLabel: (t: string | null) => string;
+   678→  getPhoneDigits: (p: string) => string;
+   679→  fetchTemplates: () => Promise<void>;
+   680→  templates: MessageTemplate[];
+   681→  copyTemplate: (t: MessageTemplate, name: string) => Promise<void>;
+   682→  leadTasks: Record<string, { id: string; title: string; status: string; priority: string }[]>;
+   683→}) {
+   684→  const phoneDigits = getPhoneDigits(lead.phone);
+   685→
+   686→  return (
+   687→    <>
+   688→      <TableRow
+   689→        key={lead.id}
+   690→        className="cursor-pointer hover:bg-gray-50"
+   691→        onClick={() => toggleExpand(lead.id)}
+   692→      >
+   693→        <TableCell className="p-2">
+   694→          {isExpanded ? (
+   695→            <ChevronDown className="w-4 h-4 text-gray-400" />
+   696→          ) : (
+   697→            <ChevronRight className="w-4 h-4 text-gray-400" />
+   698→          )}
+   699→        </TableCell>
+   700→        <TableCell className="font-medium">{lead.name}</TableCell>
+   701→        <TableCell>
+   702→          <span className="flex items-center gap-1 text-gray-600">
+   703→            <Phone className="w-3 h-3" />
+   704→            {lead.phone}
+   705→          </span>
+   706→        </TableCell>
+   707→        <TableCell className="text-gray-600">
+   708→          {getServiceLabel(lead.serviceType)}
+   709→        </TableCell>
+   710→        <TableCell>
+   711→          <div className="flex flex-wrap gap-1">
+   712→            {tags.map((tag) => {
+   713→              const c = getTagColor(tag);
+   714→              return (
+   715→                <Badge key={tag} variant="secondary" className={`text-[10px] ${c.bg} ${c.text}`}>{tag}</Badge>
+   716→              );
+   717→            })}
+   718→          </div>
+   719→        </TableCell>
+   720→        <TableCell>
+   721→          <Badge
+   722→            variant="secondary"
+   723→            className={statusInfo.color}
+   724→            onClick={(e) => e.stopPropagation()}
+   725→          >
+   726→            <Select
+   727→              value={lead.status}
+   728→              onValueChange={(v) => handleStatusChange(lead.id, v)}
+   729→            >
+   730→              <SelectTrigger className="h-6 border-0 bg-transparent p-0 text-xs font-normal focus:ring-0 w-auto min-w-[100px]">
+   731→                <SelectValue />
+   732→              </SelectTrigger>
+   733→              <SelectContent>
+   734→                <SelectItem value="new">Новый</SelectItem>
+   735→                <SelectItem value="contacted">Контактированный</SelectItem>
+   736→                <SelectItem value="qualified">Квалифицированный</SelectItem>
+   737→                <SelectItem value="lost">Потерянный</SelectItem>
+   738→              </SelectContent>
+   739→            </Select>
+   740→          </Badge>
+   741→        </TableCell>
+   742→        <TableCell className="text-gray-500 text-xs">
+   743→          {formatDate(lead.createdAt)}
+   744→        </TableCell>
+   745→        <TableCell>
+   746→          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+   747→            {phoneDigits && (
+   748→              <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-blue-500" asChild>
+   749→                <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer" title="Telegram">
+   750→                  <Send className="w-3.5 h-3.5" />
+   751→                </a>
+   752→              </Button>
+   753→            )}
+   754→            <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600" asChild>
+   755→              <a href="https://max.ru/" target="_blank" rel="noopener noreferrer" title="Max">
+   756→                <span className="text-[10px] font-bold">M</span>
+   757→              </a>
+   758→            </Button>
+   759→            <Popover>
+   760→              <PopoverTrigger asChild>
+   761→                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600" onClick={fetchTemplates} title="Шаблоны">
+   762→                  <Copy className="w-3.5 h-3.5" />
+   763→                </Button>
+   764→              </PopoverTrigger>
+   765→              <PopoverContent className="w-64 p-2" align="end">
+   766→                <p className="text-xs font-semibold text-gray-600 px-2 pb-2">Шаблоны</p>
+   767→                {templates.length === 0 && <p className="text-xs text-gray-400 px-2">Нет шаблонов</p>}
+   768→                {templates.map((t) => (
+   769→                  <button
+   770→                    key={t.id}
+   771→                    className="w-full text-left px-2 py-1.5 rounded-md hover:bg-gray-100 text-xs transition-colors"
+   772→                    onClick={() => copyTemplate(t, lead.name)}
+   773→                  >
+   774→                    <span className="font-medium">{t.name}</span>
+   775→                    <p className="text-gray-400 truncate mt-0.5">{t.content}</p>
+   776→                  </button>
+   777→                ))}
+   778→              </PopoverContent>
+   779→            </Popover>
+   780→            <AlertDialog>
+   781→              <AlertDialogTrigger asChild>
+   782→                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-600">
+   783→                  <Trash2 className="w-3.5 h-3.5" />
+   784→                </Button>
+   785→              </AlertDialogTrigger>
+   786→              <AlertDialogContent>
+   787→                <AlertDialogHeader>
+   788→                  <AlertDialogTitle>Удалить лид?</AlertDialogTitle>
+   789→                  <AlertDialogDescription>
+   790→                    Лид &quot;{lead.name}&quot; будет удалён навсегда.
+   791→                  </AlertDialogDescription>
+   792→                </AlertDialogHeader>
+   793→                <AlertDialogFooter>
+   794→                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+   795→                  <AlertDialogAction onClick={() => handleDelete(lead.id)} className="bg-red-700 hover:bg-red-800">Удалить</AlertDialogAction>
+   796→                </AlertDialogFooter>
+   797→              </AlertDialogContent>
+   798→            </AlertDialog>
+   799→          </div>
+   800→        </TableCell>
+   801→      </TableRow>
+   802→      {isExpanded && (
+   803→        <TableRow key={`${lead.id}-expanded`}>
+   804→          <TableCell colSpan={8} className="bg-gray-50 px-8 py-4">
+   805→            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+   806→              <div className="space-y-3">
+   807→                <h4 className="text-sm font-semibold text-gray-700">Информация</h4>
+   808→                <div className="space-y-2 text-sm">
+   809→                  <div className="flex gap-2">
+   810→                    <span className="text-gray-400 w-24">Телефон:</span>
+   811→                    <a href={`tel:${lead.phone}`} className="text-red-700 hover:underline">{lead.phone}</a>
+   812→                    {phoneDigits && (
+   813→                      <>
+   814→                        {" · "}
+   815→                        <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">Telegram</a>
+   816→                        {" · "}
+   817→                        <a href="https://max.ru/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:underline text-xs">Max</a>
+   818→                      </>
+   819→                    )}
+   820→                  </div>
+   821→                  {lead.source && (
+   822→                    <div className="flex gap-2">
+   823→                      <span className="text-gray-400 w-24">Источник:</span>
+   824→                      <span>{lead.source}</span>
+   825→                    </div>
+   826→                  )}
+   827→                  <div className="flex gap-2">
+   828→                    <span className="text-gray-400 w-24">Создан:</span>
+   829→                    <span>{formatDate(lead.createdAt)}</span>
+   830→                  </div>
+   831→                  <div className="flex gap-2">
+   832→                    <span className="text-gray-400 w-24">Обновлён:</span>
+   833→                    <span>{formatDate(lead.updatedAt)}</span>
+   834→                  </div>
+   835→                  {lead.comment && (
+   836→                    <div className="flex gap-2">
+   837→                      <span className="text-gray-400 w-24">Комментарий:</span>
+   838→                      <span>{lead.comment}</span>
+   839→                    </div>
+   840→                  )}
+   841→                </div>
+   842→                <div className="space-y-2">
+   843→                  <div className="flex items-center gap-2">
+   844→                    <Tag className="w-3.5 h-3.5 text-gray-500" />
+   845→                    <span className="text-sm text-gray-600 font-medium">Теги</span>
+   846→                  </div>
+   847→                  <Input
+   848→                    value={editTags[lead.id] || ""}
+   849→                    onChange={(e) => setEditTags((prev) => ({ ...prev, [lead.id]: e.target.value }))}
+   850→                    placeholder="VIP, Покупатель, ..."
+   851→                    className="text-sm"
+   852→                  />
+   853→                  <div className="flex flex-wrap gap-1">
+   854→                    {PREDEFINED_TAGS.map((tag) => {
+   855→                      const isSelected = (editTags[lead.id] || "").split(",").map((t) => t.trim()).includes(tag);
+   856→                      const c = getTagColor(tag);
+   857→                      return (
+   858→                        <button
+   859→                          key={tag}
+   860→                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${isSelected ? `${c.bg} ${c.text} border-transparent` : "border-gray-200 text-gray-500 hover:bg-gray-100"}`}
+   861→                          onClick={() => {
+   862→                            const current = (editTags[lead.id] || "").split(",").map((t) => t.trim()).filter(Boolean);
+   863→                            const next = isSelected ? current.filter((t) => t !== tag) : [...current, tag];
+   864→                            setEditTags((prev) => ({ ...prev, [lead.id]: next.join(", ") }));
+   865→                          }}
+   866→                        >
+   867→                          {tag}
+   868→                        </button>
+   869→                      );
+   870→                    })}
+   871→                  </div>
+   872→                </div>
+   873→              </div>
+   874→              {/* Linked tasks */}
+   875→              {leadTasks[lead.id] && leadTasks[lead.id].length > 0 && (
+   876→                <div className="space-y-2">
+   877→                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+   878→                    <CheckSquare className="w-3.5 h-3.5 text-gray-500" />
+   879→                    Задачи ({leadTasks[lead.id].length})
+   880→                  </h4>
+   881→                  <div className="space-y-1">
+   882→                    {leadTasks[lead.id].map((task) => (
+   883→                      <div key={task.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100">
+   884→                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+   885→                        <span className={`${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-700'}`}>{task.title}</span>
+   886→                        <Badge variant="secondary" className={`text-[9px] ml-auto h-4 ${task.status === 'completed' ? 'bg-green-100 text-green-700' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+   887→                          {task.status === 'completed' ? 'Готово' : task.status === 'in_progress' ? 'В работе' : 'Ожидание'}
+   888→                        </Badge>
+   889→                      </div>
+   890→                    ))}
+   891→                  </div>
+   892→                </div>
+   893→              )}
+   894→              <div className="space-y-3">
+   895→                <div className="flex items-center justify-between">
+   896→                  <h4 className="text-sm font-semibold text-gray-700">Заметки</h4>
+   897→                  <div className="flex gap-1">
+   898→                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleExpand(lead.id)}>
+   899→                      <X className="w-3 h-3 mr-1" />Закрыть
+   900→                    </Button>
+   901→                    <Button
+   902→                      size="sm"
+   903→                      className="h-7 text-xs bg-red-700 hover:bg-red-800"
+   904→                      disabled={savingNotes === lead.id}
+   905→                      onClick={() => handleSaveNotes(lead.id)}
+   906→                    >
+   907→                      <Save className="w-3 h-3 mr-1" />
+   908→                      {savingNotes === lead.id ? "..." : "Сохранить"}
+   909→                    </Button>
+   910→                  </div>
+   911→                </div>
+   912→                <Textarea
+   913→                  value={editNotes[lead.id] || ""}
+   914→                  onChange={(e) => setEditNotes((prev) => ({ ...prev, [lead.id]: e.target.value }))}
+   915→                  placeholder="Добавьте заметки по лиду..."
+   916→                  rows={5}
+   917→                  className="text-sm"
+   918→                />
+   919→              </div>
+   920→            </div>
+   921→          </TableCell>
+   922→        </TableRow>
+   923→      )}
+   924→    </>
+   925→  );
+   926→}

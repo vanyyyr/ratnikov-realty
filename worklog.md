@@ -630,3 +630,61 @@ Stage Summary:
 - Days-on-market timer with color-coded badges
 - Quick lead entry bar optimized for mobile use
 - Cian parser mini-service ready to run with `bun --hot index.ts` in mini-services/cian-parser/
+
+---
+Task ID: 1
+Agent: fullstack-developer
+Task: Site redesign — personal business card with portrait
+
+Work Log:
+- Portrait photo already present at public/portrait.jpg (640x640 JPEG)
+- Completely rewrote i18n.ts with human, personal language in RU/EN
+  - Removed `services` top-level key (merged into `about.services`)
+  - Added `hero.role`, `hero.line1`, `hero.line2` for new hero layout
+  - Added `about.servicesTitle`, `about.services[]`, `about.setlTitle`, `about.setText`
+  - Rewrote FAQ in conversational tone with specific details
+  - Updated all copy to first-person, no buzzwords
+- Redesigned page.tsx hero section: split layout with large portrait (left) + personal text (right)
+  - Portrait: 240→300→380px responsive, rounded-2xl, subtle border
+  - Text: red greeting label, large name, red role line, two bullet points with red dots, CTA + CIAN buttons
+  - Removed scroll indicator (chevron down)
+  - Removed parallax text offset, kept background parallax
+- Merged services into about section: compact 2x2 card grid with red dot accents instead of numbered headers
+- Removed separate services section entirely
+- Updated Setl Group box with partner badge
+- Changed branding from "РАТНИКОВ" to hero.name ("Илья Ратников") in navbar and mobile sheet
+- Updated nav links: removed services, kept about/reviews/contact
+- Added Yandex Map embed (iframe) to contacts section, below form
+- Build passes clean, lint passes clean (0 errors, 0 warnings)
+
+Stage Summary:
+- Site feels personal, not corporate/template-like
+- Portrait is prominently featured in hero with split layout
+- Services integrated into about as compact 2x2 card grid with red dot accents
+- All toggles (reviews, cases, stats) still functional
+- Yandex Map embedded in contacts section
+- Lint and build pass clean
+
+---
+Task ID: 2
+Agent: Main Orchestrator
+Task: CRM tasks verification + quick lead entry fix + CRM guide
+
+Work Log:
+- Verified all CRM tasks 18, 21, 22, 23, 24 were already implemented in previous sessions
+- Task 18: Auto commission calculation already in deals API (closed_won triggers calculation)
+- Task 21: CIAN import already in properties page with /api/admin/properties/import endpoint
+- Task 22: Photo gallery already in properties page (imageUrls JSON field, grid preview, add/remove)
+- Task 23: Days-on-market timer already in properties page (getDaysOnMarket, color-coded badges)
+- Task 24: Task-lead/deal linking already in tasks page (leadId/dealId selects, linked badges)
+- Task 32: Updated quick lead entry — made phone-only entry (name optional, defaults to phone number)
+  - Reordered inputs: phone first (required), name second (hidden on mobile)
+  - Updated validation: only phone required
+  - Updated disabled state on button
+- Created comprehensive CRM guide at /admin/guide (accordion-style, 10 sections, ~50 features documented)
+- Lint passes clean
+
+Stage Summary:
+- Only task 32 needed actual code changes (phone-only quick entry)
+- CRM guide covers: Leads, Deals, Clients, Properties, Tasks, Analytics, Templates, Reviews, Cases, Settings
+- All features documented with descriptions and tips
