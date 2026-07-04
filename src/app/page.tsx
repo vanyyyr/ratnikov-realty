@@ -861,7 +861,7 @@ export default function Home() {
                   <span>{siteSettings.address}</span>
                 </div>
                 <a
-                  href="https://yandex.ru/maps/-/CDaGK-UB"
+                  href={`https://yandex.ru/maps/?text=${encodeURIComponent(siteSettings.address || "Санкт-Петербург")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-red-700 hover:underline"
@@ -872,12 +872,12 @@ export default function Home() {
               </div>
             </FadeIn>
 
-            {/* Yandex Map embed */}
+            {/* Yandex Map embed — shows actual office address from settings */}
             <FadeIn delay={0.3}>
               <div className="mt-8 rounded-xl overflow-hidden border border-gray-200/60 shadow-sm">
                 <iframe
                   title="Yandex Map"
-                  src="https://yandex.ru/map-widget/v1/?ll=30.335098%2C59.934280&z=15&text=%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3"
+                  src={`https://yandex.ru/map-widget/v1/?text=${encodeURIComponent(siteSettings.address || "Санкт-Петербург")}&z=16`}
                   width="100%"
                   height={350}
                   className="border-0"

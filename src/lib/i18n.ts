@@ -20,9 +20,9 @@ export const translations = {
     },
     about: {
       label: "Обо мне",
-      title: "Я не агентство — я один человек, который всё делает сам",
+      title: "Не агентство — всё делаю лично, без посредников",
       description:
-        "Звоните или пишете — я подбираю варианты, организую показы, проверяю документы через Росреестр, веду переговоры и сопровождаю до регистрации права собственности. Если продаёте — снимаю профессиональные фото, размещаю на ЦИАН и Авито, запускаю таргет. Вам не нужно ни о чём думать, кроме принятия решения.",
+        "От первого звонка до подписания документов — на связи на каждом этапе. Подбор вариантов, показы, проверка через Росреестр, переговоры и сопровождение регистрации. При продаже — профессиональные фото, размещение на ЦИАН и Авито, таргет. Нужно только принять решение, остальное берётся на себя.",
       servicesTitle: "С чем помогу",
       services: [
         {
@@ -35,7 +35,7 @@ export const translations = {
         },
         {
           title: "Новостройки Setl Group",
-          text: "Официальный партнёр — даю скидку 2% от стоимости. Помогаю выбрать ЖК, планировку и зафиксировать цену.",
+          text: "Официальный партнёр — скидка 2% от стоимости. Подбор ЖК, планировки, фиксация цены.",
         },
         {
           title: "Юридическое сопровождение",
@@ -136,9 +136,9 @@ export const translations = {
     },
     about: {
       label: "About Me",
-      title: "I'm not an agency — I'm one person who does everything myself",
+      title: "Not an agency — everything handled personally, no middlemen",
       description:
-        "Call or write — I find options, arrange viewings, check documents through Rosreestr, negotiate, and accompany you to the title registration. If you're selling — I take professional photos, list on Cian and Avito, run targeted ads. You don't have to think about anything except making the decision.",
+        "From the first call to signing — involved at every stage. Finding options, viewings, Rosreestr checks, negotiations, registration support. When selling — professional photos, Cian and Avito listings, targeted ads. The only thing needed is the decision, everything else is taken care of.",
       servicesTitle: "How I can help",
       services: [
         {
@@ -151,7 +151,7 @@ export const translations = {
         },
         {
           title: "Setl Group new builds",
-          text: "Official partner — I give a 2% discount off the price. I help choose the development, floor plan, and lock in the price.",
+          text: "Official partner — 2% discount off the price. Development selection, floor plans, price lock.",
         },
         {
           title: "Legal support",
