@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +48,10 @@ import {
   Maximize,
   DollarSign,
   DoorOpen,
+  X,
+  Download,
+  ImageIcon,
+  Clock,
 } from "lucide-react";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -73,7 +78,24 @@ interface Property {
   status: string;
   cianUrl: string | null;
   description: string | null;
+  imageUrls: string | null;
   createdAt: string;
+}
+
+function parseImageUrls(imageUrls: string | null): string[] {
+  if (!imageUrls) return [];
+  try {
+    const parsed = JSON.parse(imageUrls);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function getDaysOnMarket(createdAt: string): number {
+  const created = new Date(createdAt);
+  const now = new Date();
+  return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 export default function PropertiesPage() {
@@ -92,7 +114,15 @@ export default function PropertiesPage() {
     status: "available",
     cianUrl: "",
     description: "",
+    imageUrls: [] as string[],
   });
+  const [newImageUrl, setNewImageUrl] = useState("");
+
+  // Cian import state
+  const [cianDialogOpen, setCianDialogOpen] = useState(false);
+  const [cianUrl, setCianUrl] = useState("");
+  const [cianImporting, setCianImporting] = useState(false);
+  const [cianError, setCianError] = useState("");
 
   const fetchProperties = useCallback(async () => {
     try {
@@ -115,8 +145,9 @@ export default function PropertiesPage() {
   const resetForm = () => {
     setForm({
       title: "", address: "", type: "apartment", rooms: "", area: "",
-      price: "", status: "available", cianUrl: "", description: "",
+      price: "", status: "available", cianUrl: "", description: "", imageUrls: [],
     });
+    setNewImageUrl("");
     setEditingProperty(null);
   };
 
@@ -137,7 +168,9 @@ export default function PropertiesPage() {
       status: prop.status,
       cianUrl: prop.cianUrl || "",
       description: prop.description || "",
+      imageUrls: parseImageUrls(prop.imageUrls),
     });
+    setNewImageUrl("");
     setDialogOpen(true);
   };
 
@@ -157,6 +190,7 @@ export default function PropertiesPage() {
         status: form.status,
         cianUrl: form.cianUrl || null,
         description: form.description || null,
+        imageUrls: form.imageUrls.length > 0 ? JSON.stringify(form.imageUrls) : null,
       };
 
       if (editingProperty) {
@@ -191,6 +225,82 @@ export default function PropertiesPage() {
       }
     } catch {
       toast.error("Ошибка удаления");
+    }
+  };
+
+  const addImageUrl = () => {
+    const url = newImageUrl.trim();
+    if (!url) return;
+    if (form.imageUrls.includes(url)) {
+      toast.error("Этот URL уже добавлен");
+      return;
+    }
+    setForm({ ...form, imageUrls: [...form.imageUrls, url] });
+    setNewImageUrl("");
+  };
+
+  const removeImageUrl = (index: number) => {
+    setForm({ ...form, imageUrls: form.imageUrls.filter((_, i) => i !== index) });
+  };
+
+  const handleCianImport = async () => {
+    if (!cianUrl.trim()) {
+      toast.error("Вставьте ссылку на объявление ЦИАН");
+      return;
+    }
+    setCianImporting(true);
+    setCianError("");
+    try {
+      const res = await fetch("/api/admin/properties/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: cianUrl.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        // Open the create dialog pre-filled
+        setCianDialogOpen(false);
+        setCianUrl("");
+        setEditingProperty(null);
+        setForm({
+          title: data.title || "",
+          address: data.address || "",
+          type: data.rooms ? "apartment" : "apartment",
+          rooms: data.rooms ? String(data.rooms) : "",
+          area: data.area ? String(data.area) : "",
+          price: data.price ? String(data.price) : "",
+          status: "available",
+          cianUrl: cianUrl.trim(),
+          description: data.description || "",
+          imageUrls: [],
+        });
+        setDialogOpen(true);
+        toast.success("Данные загружены, проверьте и сохраните");
+      } else {
+        setCianError(data.error || "Не удалось извлечь данные");
+        // Still open the dialog with whatever we got
+        if (data.title || data.address) {
+          setCianDialogOpen(false);
+          setEditingProperty(null);
+          setForm({
+            title: data.title || "",
+            address: data.address || "",
+            type: data.rooms ? "apartment" : "apartment",
+            rooms: data.rooms ? String(data.rooms) : "",
+            area: data.area ? String(data.area) : "",
+            price: data.price ? String(data.price) : "",
+            status: "available",
+            cianUrl: cianUrl.trim(),
+            description: data.description || "",
+            imageUrls: [],
+          });
+          setDialogOpen(true);
+        }
+      }
+    } catch {
+      setCianError("Ошибка подключения к парсеру");
+    } finally {
+      setCianImporting(false);
     }
   };
 
@@ -230,128 +340,226 @@ export default function PropertiesPage() {
           </TabsList>
         </Tabs>
 
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button className="bg-red-700 hover:bg-red-800" onClick={openNew}>
-              <Plus className="w-4 h-4 mr-1" />
-              Новый объект
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingProperty ? "Редактировать объект" : "Новый объект"}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Название *</Label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="2-к квартира, 65 м², Невский р-н"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Адрес</Label>
-                <Input
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="ул. Ленина, д. 10, кв. 5"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Тип</Label>
-                  <Select
-                    value={form.type}
-                    onValueChange={(v) => setForm({ ...form, type: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="apartment">Квартира</SelectItem>
-                      <SelectItem value="house">Дом</SelectItem>
-                      <SelectItem value="commercial">Коммерческая</SelectItem>
-                      <SelectItem value="land">Участок</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Статус</Label>
-                  <Select
-                    value={form.status}
-                    onValueChange={(v) => setForm({ ...form, status: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="available">Доступно</SelectItem>
-                      <SelectItem value="reserved">Бронь</SelectItem>
-                      <SelectItem value="sold">Продано</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label>Комнаты</Label>
-                  <Input
-                    type="number"
-                    value={form.rooms}
-                    onChange={(e) => setForm({ ...form, rooms: e.target.value })}
-                    placeholder="3"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Площадь (м²)</Label>
-                  <Input
-                    type="number"
-                    value={form.area}
-                    onChange={(e) => setForm({ ...form, area: e.target.value })}
-                    placeholder="65"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Цена (₽)</Label>
-                  <Input
-                    type="number"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    placeholder="8500000"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Ссылка ЦИАН</Label>
-                <Input
-                  value={form.cianUrl}
-                  onChange={(e) => setForm({ ...form, cianUrl: e.target.value })}
-                  placeholder="https://cian.ru/..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Описание</Label>
-                <Textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Описание объекта недвижимости..."
-                  rows={4}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
-                Отмена
+        <div className="flex gap-2">
+          {/* Cian import button */}
+          <Dialog open={cianDialogOpen} onOpenChange={setCianDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-1" />
+                Импорт с ЦИАН
               </Button>
-              <Button className="bg-red-700 hover:bg-red-800" onClick={handleSave}>
-                {editingProperty ? "Сохранить" : "Создать"}
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Импорт с ЦИАН</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>URL объявления</Label>
+                  <Input
+                    value={cianUrl}
+                    onChange={(e) => { setCianUrl(e.target.value); setCianError(""); }}
+                    placeholder="https://cian.ru/sale/flat/..."
+                  />
+                </div>
+                {cianError && (
+                  <p className="text-xs text-red-500">{cianError}</p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setCianDialogOpen(false); setCianError(""); }}>
+                  Отмена
+                </Button>
+                <Button
+                  className="bg-red-700 hover:bg-red-800"
+                  onClick={handleCianImport}
+                  disabled={cianImporting || !cianUrl.trim()}
+                >
+                  {cianImporting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-1" />
+                  )}
+                  Импорт
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button className="bg-red-700 hover:bg-red-800" onClick={openNew}>
+                <Plus className="w-4 h-4 mr-1" />
+                Новый объект
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingProperty ? "Редактировать объект" : "Новый объект"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Название *</Label>
+                  <Input
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    placeholder="2-к квартира, 65 м², Невский р-н"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Адрес</Label>
+                  <Input
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder="ул. Ленина, д. 10, кв. 5"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Тип</Label>
+                    <Select
+                      value={form.type}
+                      onValueChange={(v) => setForm({ ...form, type: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="apartment">Квартира</SelectItem>
+                        <SelectItem value="house">Дом</SelectItem>
+                        <SelectItem value="commercial">Коммерческая</SelectItem>
+                        <SelectItem value="land">Участок</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Статус</Label>
+                    <Select
+                      value={form.status}
+                      onValueChange={(v) => setForm({ ...form, status: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Доступно</SelectItem>
+                        <SelectItem value="reserved">Бронь</SelectItem>
+                        <SelectItem value="sold">Продано</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Комнаты</Label>
+                    <Input
+                      type="number"
+                      value={form.rooms}
+                      onChange={(e) => setForm({ ...form, rooms: e.target.value })}
+                      placeholder="3"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Площадь (м²)</Label>
+                    <Input
+                      type="number"
+                      value={form.area}
+                      onChange={(e) => setForm({ ...form, area: e.target.value })}
+                      placeholder="65"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Цена (₽)</Label>
+                    <Input
+                      type="number"
+                      value={form.price}
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      placeholder="8500000"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Ссылка ЦИАН</Label>
+                  <Input
+                    value={form.cianUrl}
+                    onChange={(e) => setForm({ ...form, cianUrl: e.target.value })}
+                    placeholder="https://cian.ru/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Описание</Label>
+                  <Textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Описание объекта недвижимости..."
+                    rows={4}
+                  />
+                </div>
+
+                {/* Photo gallery management */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                    Фотографии ({form.imageUrls.length})
+                  </Label>
+
+                  {/* Existing photos grid */}
+                  {form.imageUrls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {form.imageUrls.map((url, idx) => (
+                        <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100">
+                          <Image
+                            src={url}
+                            alt={`Фото ${idx + 1}`}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImageUrl(idx)}
+                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add photo URL */}
+                  <div className="flex gap-2">
+                    <Input
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="https://example.com/photo.jpg"
+                      className="flex-1"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addImageUrl();
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={addImageUrl}>
+                      Добавить
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
+                  Отмена
+                </Button>
+                <Button className="bg-red-700 hover:bg-red-800" onClick={handleSave}>
+                  {editingProperty ? "Сохранить" : "Создать"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Property cards */}
@@ -364,13 +572,56 @@ export default function PropertiesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {properties.map((prop) => {
             const statusInfo = STATUS_MAP[prop.status] || STATUS_MAP.available;
+            const images = parseImageUrls(prop.imageUrls);
+            const days = getDaysOnMarket(prop.createdAt);
+            const showDaysBadge = prop.status === "available";
+            let daysBadgeClass = "";
+            let daysText = "";
+            if (showDaysBadge) {
+              if (days > 60) {
+                daysBadgeClass = "bg-red-100 text-red-700";
+                daysText = `${days} дн.`;
+              } else if (days > 30) {
+                daysBadgeClass = "bg-amber-100 text-amber-700";
+                daysText = `${days} дн.`;
+              } else {
+                daysBadgeClass = "bg-gray-100 text-gray-600";
+                daysText = `${days} дн.`;
+              }
+            }
             return (
-              <Card key={prop.id} className="hover:shadow-md transition-shadow">
+              <Card key={prop.id} className="hover:shadow-md transition-shadow overflow-hidden">
+                {/* Photo thumbnail */}
+                {images.length > 0 && (
+                  <div className="relative w-full h-40 bg-gray-100">
+                    <Image
+                      src={images[0]}
+                      alt={prop.title}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    {images.length > 1 && (
+                      <Badge variant="secondary" className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] h-5">
+                        <ImageIcon className="w-3 h-3 mr-0.5" />
+                        {images.length}
+                      </Badge>
+                    )}
+                  </div>
+                )}
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <Badge variant="secondary" className={statusInfo.color}>
-                      {statusInfo.label}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant="secondary" className={statusInfo.color}>
+                        {statusInfo.label}
+                      </Badge>
+                      {showDaysBadge && (
+                        <Badge variant="secondary" className={`text-[10px] h-5 ${daysBadgeClass}`}>
+                          <Clock className="w-2.5 h-2.5 mr-0.5" />
+                          {daysText}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex gap-1">
                       {prop.cianUrl && (
                         <a href={prop.cianUrl} target="_blank" rel="noopener noreferrer">

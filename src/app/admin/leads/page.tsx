@@ -62,6 +62,8 @@ import {
   Copy,
   Tag,
   MessageSquare,
+  CheckSquare,
+  Plus,
 } from "lucide-react";
 
 interface Lead {
@@ -135,7 +137,13 @@ export default function LeadsPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [leadTasks, setLeadTasks] = useState<Record<string, { id: string; title: string; status: string; priority: string }[]>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Quick add lead state
+  const [quickName, setQuickName] = useState("");
+  const [quickPhone, setQuickPhone] = useState("");
+  const [quickAdding, setQuickAdding] = useState(false);
 
   const fetchLeads = useCallback(async () => {
     try {
@@ -207,7 +215,7 @@ export default function LeadsPage() {
     }
   };
 
-  const toggleExpand = (id: string) => {
+  const toggleExpand = async (id: string) => {
     if (expandedId === id) {
       setExpandedId(null);
     } else {
@@ -216,6 +224,16 @@ export default function LeadsPage() {
       if (lead) {
         setEditNotes((prev) => ({ ...prev, [id]: lead.notes || "" }));
         setEditTags((prev) => ({ ...prev, [id]: parseTags(lead.tags).join(", ") }));
+      }
+      // Fetch tasks for this lead
+      try {
+        const res = await fetch(`/api/admin/tasks?leadId=${id}`);
+        if (res.ok) {
+          const tasks = await res.json();
+          setLeadTasks((prev) => ({ ...prev, [id]: tasks }));
+        }
+      } catch {
+        // silent
       }
     }
   };
@@ -264,6 +282,33 @@ export default function LeadsPage() {
     toast.success("Шаблон скопирован");
   };
 
+  const handleQuickAdd = async () => {
+    if (!quickName.trim() || !quickPhone.trim()) {
+      toast.error("Введите имя и телефон");
+      return;
+    }
+    setQuickAdding(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: quickName.trim(), phone: quickPhone.trim() }),
+      });
+      if (res.ok) {
+        toast.success("Лид добавлен");
+        setQuickName("");
+        setQuickPhone("");
+        fetchLeads();
+      } else {
+        toast.error("Ошибка добавления");
+      }
+    } catch {
+      toast.error("Ошибка добавления");
+    } finally {
+      setQuickAdding(false);
+    }
+  };
+
   const getPhoneDigits = (phone: string) => phone.replace(/\D/g, "");
 
   const formatDate = (dateStr: string) => {
@@ -288,6 +333,61 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Quick add lead bar */}
+      <div className="bg-red-700 -mx-4 sm:-mx-0 px-4 py-3 rounded-lg sm:rounded-xl">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <span className="text-white text-sm font-medium hidden sm:block flex-shrink-0">
+            Быстрое добавление:
+          </span>
+          <div className="flex flex-col sm:flex-row gap-2 flex-1">
+            <Input
+              value={quickName}
+              onChange={(e) => setQuickName(e.target.value)}
+              placeholder="Имя"
+              className="bg-white/95 border-0 h-9 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (quickName.trim() && !quickPhone.trim()) {
+                    // Focus phone field
+                    document.getElementById("quick-phone-input")?.focus();
+                  } else {
+                    handleQuickAdd();
+                  }
+                }
+              }}
+            />
+            <Input
+              id="quick-phone-input"
+              value={quickPhone}
+              onChange={(e) => setQuickPhone(e.target.value)}
+              placeholder="Телефон"
+              type="tel"
+              className="bg-white/95 border-0 h-9 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleQuickAdd();
+                }
+              }}
+            />
+          </div>
+          <Button
+            className="bg-white text-red-700 hover:bg-red-50 font-medium h-9 flex-shrink-0"
+            onClick={handleQuickAdd}
+            disabled={quickAdding || !quickName.trim() || !quickPhone.trim()}
+          >
+            {quickAdding ? (
+              <div className="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 sm:mr-1" />
+            )}
+            <span className="hidden sm:inline">Быстро добавить</span>
+            <span className="sm:hidden">Добавить</span>
+          </Button>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
@@ -557,6 +657,7 @@ function LeadRow({
   fetchTemplates,
   templates,
   copyTemplate,
+  leadTasks,
 }: {
   lead: Lead;
   isExpanded: boolean;
@@ -566,7 +667,7 @@ function LeadRow({
   editNotes: Record<string, string>;
   editTags: Record<string, string>;
   savingNotes: string | null;
-  toggleExpand: (id: string) => void;
+  toggleExpand: (id: string) => Promise<void>;
   handleStatusChange: (id: string, status: string) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
   handleSaveNotes: (id: string) => Promise<void>;
@@ -578,6 +679,7 @@ function LeadRow({
   fetchTemplates: () => Promise<void>;
   templates: MessageTemplate[];
   copyTemplate: (t: MessageTemplate, name: string) => Promise<void>;
+  leadTasks: Record<string, { id: string; title: string; status: string; priority: string }[]>;
 }) {
   const phoneDigits = getPhoneDigits(lead.phone);
 
@@ -769,6 +871,26 @@ function LeadRow({
                   </div>
                 </div>
               </div>
+              {/* Linked tasks */}
+              {leadTasks[lead.id] && leadTasks[lead.id].length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                    <CheckSquare className="w-3.5 h-3.5 text-gray-500" />
+                    Задачи ({leadTasks[lead.id].length})
+                  </h4>
+                  <div className="space-y-1">
+                    {leadTasks[lead.id].map((task) => (
+                      <div key={task.id} className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-100">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                        <span className={`${task.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-700'}`}>{task.title}</span>
+                        <Badge variant="secondary" className={`text-[9px] ml-auto h-4 ${task.status === 'completed' ? 'bg-green-100 text-green-700' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {task.status === 'completed' ? 'Готово' : task.status === 'in_progress' ? 'В работе' : 'Ожидание'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-gray-700">Заметки</h4>

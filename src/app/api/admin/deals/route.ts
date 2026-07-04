@@ -55,6 +55,15 @@ export async function PUT(req: NextRequest) {
     if (data.stage === "closed_won" || data.stage === "closed_lost") {
       update.closedAt = new Date();
     }
+    // Auto-calculate commission when deal is closed_won
+    if (data.stage === "closed_won") {
+      const dealValue = data.value !== undefined ? data.value : currentDeal.value;
+      if (dealValue != null) {
+        const rateSetting = await db.setting.findUnique({ where: { key: "commission_rate" } });
+        const rate = rateSetting ? parseFloat(rateSetting.value) || 3 : 3;
+        update.commission = Math.round(dealValue * (rate / 100) * 100) / 100;
+      }
+    }
     // Log stage change
     if (currentDeal.stage !== data.stage) {
       await logActivity(

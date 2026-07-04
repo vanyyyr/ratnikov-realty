@@ -20,6 +20,7 @@ model Lead {
   notes       String?
   tags        String?  // JSON array of tag strings, e.g. '["VIP","Покупатель"]'
   client      Client?
+  tasks       Task[]
 }
 
 model Client {
@@ -45,6 +46,7 @@ model Deal {
   title       String
   stage       String   @default("new") // new, showing, negotiation, contract, closed_won, closed_lost
   value       Float?
+  commission  Float?  // calculated commission
   clientId    String
   client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   propertyId  String?
@@ -53,6 +55,7 @@ model Deal {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   closedAt    DateTime?
+  tasks       Task[]
 }
 
 model Property {
@@ -80,6 +83,10 @@ model Task {
   priority    String   @default("medium") // low, medium, high
   dueDate     DateTime?
   clientName  String?
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  dealId      String?
+  deal        Deal?    @relation(fields: [dealId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   completedAt DateTime?
@@ -103,6 +110,17 @@ model MessageTemplate {
   name      String
   content   String
   category  String   @default("general") // greeting, showing, followup, congrats, general
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Case {
+  id        String   @id @default(cuid())
+  title     String
+  text      String
+  result    String?  // e.g. "Продано за 12 дней", "Экономия 300 000 ₽"
+  isHidden  Boolean  @default(false)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -35,7 +35,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Handshake, DollarSign, Calendar, Trash2, Edit } from "lucide-react";
+import { Plus, Handshake, DollarSign, Calendar, Trash2, Edit, Percent } from "lucide-react";
 
 const STAGES = [
   { key: "new", label: "Новая", color: "bg-gray-100 text-gray-700 border-gray-200" },
@@ -60,6 +60,7 @@ interface Deal {
   title: string;
   stage: string;
   value: number | null;
+  commission: number | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -429,6 +430,13 @@ export default function DealsPage() {
                             <p className="text-xs font-semibold text-red-700 flex items-center gap-1">
                               <DollarSign className="w-3 h-3" />
                               {formatMoney(deal.value)}
+                            </p>
+                          )}
+
+                          {deal.commission != null && deal.commission > 0 && (
+                            <p className="text-xs font-medium text-green-600 flex items-center gap-1">
+                              <Percent className="w-3 h-3" />
+                              Комиссия: {formatMoney(deal.commission)}
                             </p>
                           )}
 

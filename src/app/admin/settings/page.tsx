@@ -20,6 +20,9 @@ import {
   CheckCircle,
   Star,
   Phone,
+  Trophy,
+  TrendingUp,
+  Percent,
 } from "lucide-react";
 
 type Settings = Record<string, string>;
@@ -312,6 +315,123 @@ export default function SettingsPage() {
           </Card>
         );
       })}
+
+      {/* Cases toggle section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-red-700" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-base">Раздел «Кейсы»</CardTitle>
+              <CardDescription className="text-xs">
+                Показывать или скрывать блок кейсов на сайте
+              </CardDescription>
+            </div>
+            <Switch
+              checked={settings.show_cases !== "false"}
+              onCheckedChange={async (checked) => {
+                updateSetting("show_cases", checked ? "true" : "false");
+                try {
+                  await fetch("/api/admin/settings", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ show_cases: checked ? "true" : "false" }),
+                  });
+                  toast.success(checked ? "Кейсы показываются" : "Кейсы скрыты");
+                } catch {
+                  toast.error("Ошибка сохранения");
+                }
+              }}
+            />
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Stats toggle section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-red-700" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-base">Раздел статистики</CardTitle>
+              <CardDescription className="text-xs">
+                Показывать или скрывать блок статистики на сайте
+              </CardDescription>
+            </div>
+            <Switch
+              checked={settings.show_stats !== "false"}
+              onCheckedChange={async (checked) => {
+                updateSetting("show_stats", checked ? "true" : "false");
+                try {
+                  await fetch("/api/admin/settings", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ show_stats: checked ? "true" : "false" }),
+                  });
+                  toast.success(checked ? "Статистика показывается" : "Статистика скрыта");
+                } catch {
+                  toast.error("Ошибка сохранения");
+                }
+              }}
+            />
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Commission section */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center">
+              <Percent className="w-4 h-4 text-red-700" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Комиссия</CardTitle>
+              <CardDescription className="text-xs">
+                Размер комиссии для отображения на сайте
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-3">
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-sm">Размер комиссии (%)</Label>
+              <Input
+                type="number"
+                value={settings.commission_rate || "3"}
+                onChange={(e) => updateSetting("commission_rate", e.target.value)}
+                placeholder="3"
+                min={0}
+                max={100}
+              />
+            </div>
+            <Button
+              size="sm"
+              className="bg-red-700 hover:bg-red-800"
+              onClick={async () => {
+                try {
+                  await fetch("/api/admin/settings", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ commission_rate: settings.commission_rate || "3" }),
+                  });
+                  toast.success("Комиссия сохранена");
+                } catch {
+                  toast.error("Ошибка сохранения");
+                }
+              }}
+            >
+              <Save className="w-4 h-4 mr-1" />
+              Сохранить
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Reviews toggle section */}
       <Card>

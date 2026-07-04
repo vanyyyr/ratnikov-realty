@@ -3,345 +3,232 @@ export type Locale = "ru" | "en";
 export const translations = {
   ru: {
     nav: {
-      about: "О специалисте",
+      about: "Как я работаю",
       services: "Услуги",
       reviews: "Отзывы",
       contact: "Контакты",
       cian: "Объекты на ЦИАН",
     },
     hero: {
-      greeting: "Недвижимость Санкт-Петербурга и ЛО",
+      greeting: "Недвижимость в Петербурге",
       name: "Илья Ратников",
-      title: "Риэлтор-эксперт",
+      title: "Риэлтор",
       subtitle:
-        "Универсальный специалист по недвижимости. Комплексный подход к решению ваших задач — от подбора объекта до полного сопровождения сделки.",
-      cta: "Оставить заявку",
+        "Помогаю купить, продать или оценить недвижимость в Санкт-Петербурге. Сопровождаю сделку от первого звонка до регистрации права — документы, расчёты, показы.",
+      cta: "Обсудить задачу",
       cian: "Смотреть объекты",
-      scroll: "Узнать больше",
+      scroll: "Дальше",
     },
     about: {
-      label: "О специалисте",
-      title: "Комплексный подход к недвижимости",
+      label: "Как я работаю",
+      title: "От звонка до регистрации — полностью",
       description:
-        "Предлагаю комплексное сопровождение сделок с недвижимостью, включая маркетинговые и юридические услуги. Проконсультирую по новостройкам, предоставлю экспертное заключение и организую показы объектов. Активно продвигаю объекты на рынке и обеспечиваю эффективное взаимодействие с клиентами.",
-      mission: "Миссия и принципы работы",
+        "Берёте на себя только решение, я — всё остальное. Подбираю объекты, проверяю юридическую чистоту, веду переговоры, готовлю документы. Если нужно — продаю вашу недвижимость с максимальной выгодой через таргет и закрытые базы.",
+      mission: "Setl Group",
       missionText:
-        "Комплексный подход к реализации недвижимости, включая маркетинговое и юридическое сопровождение. Сотрудничество с холдингом Setl Group и консультации по новостройкам с скидкой 2%. Наша цель — обеспечить эффективное продвижение объектов и успешное завершение сделок.",
-      partner: "Партнёр — Setl Group",
-    },
-    advantages: {
-      label: "Почему я",
-      title: "Ваше преимущество в работе со мной",
-      items: [
-        {
-          title: "Экспертиза и аналитика рынка",
-          text: "Актуальные данные о рыночной конъюнктуре позволяют установить объективную стоимость объекта. Это предотвращает финансовые потери из-за занижения цены при продаже или переплаты при покупке.",
-        },
-        {
-          title: "Юридическая чистота и минимизация рисков",
-          text: "Проверка правоустанавливающих документов, истории объекта и дееспособности сторон — критически важно для предотвращения оспаривания сделки в будущем.",
-        },
-        {
-          title: "Профессиональный маркетинг",
-          text: "Максимальный охват целевой аудитории через специализированные каналы: закрытые базы, таргетированная реклама. Расширение воронки поиска, включая объекты, которых ещё нет в открытом доступе.",
-        },
-        {
-          title: "Эффективные переговоры",
-          text: "Выступая в качестве медиатора, исключаю эмоциональный фактор. Навык профессионального ведения торгов позволяет защитить ваши интересы и добиться оптимальных условий.",
-        },
-      ],
+        "Партнёр застройщика Setl Group — даю скидку 2% на все их объекты в Петербурге. Актуальные акции, планировки и цены под рукой.",
+      partner: "Партнёр застройщика",
     },
     services: {
       label: "Услуги",
-      title: "Мои услуги",
-      subtitle:
-        "Маркетинговое и юридическое сопровождение, консультации по новостройкам, расчёт стоимости, организация показов, обзвон покупателей, проверка контрагентов и оформление договоров.",
+      title: "Что я делаю",
       items: [
         {
-          title: "Маркетинговое и юридическое сопровождение",
-          text: "Полный комплекс услуг по сопровождению сделки с учётом всех юридических аспектов.",
+          title: "Покупка недвижимости",
+          text: "Подбор объектов по вашим критериям — от студий до загородных домов. Показы, сравнение, проверка документов.",
         },
         {
-          title: "Консультации по новостройкам",
-          text: "Информация о новостройках с учётом скидки 2% на объекты Setl Group.",
+          title: "Продажа недвижимости",
+          text: "Оценка, профессиональные фото, размещение на ЦИАН и Авито, таргетированная реклама, показы, переговоры.",
         },
         {
-          title: "Подготовка экспертного заключения",
-          text: "Расчёт актуальной рыночной стоимости объекта недвижимости.",
+          title: "Юридическое сопровождение",
+          text: "Проверка чистоты объекта через Росреестр и суды. Подготовка договора, регистрация перехода права.",
         },
         {
-          title: "Экспресс-сопровождение сделки",
-          text: "Для клиентов, у которых уже есть покупатель. Полное сопровождение, включая проверку документов и закрепление договорённостей.",
+          title: "Новостройки со скидкой",
+          text: "Партнёр Setl Group — скидка 2% на все объекты холдинга. Помогаю выбрать новостройку и зафиксировать лучшую цену.",
         },
       ],
     },
     stats: {
-      label: "Цифры",
+      label: "Опыт",
       items: [
-        { value: "2+", label: "Года в профессии" },
-        { value: "15+", label: "Успешных сделок" },
-        { value: "98%", label: "Довольных клиентов" },
-        { value: "24/7", label: "На связи" },
+        { value: "15+", label: "сделок" },
+        { value: "2", label: "года практики" },
+        { value: "2%", label: "скидка Setl Group" },
       ],
+    },
+    cases: {
+      label: "Кейсы",
+      title: "Результаты работы",
     },
     reviews: {
       label: "Отзывы",
-      title: "Что говорят клиенты",
+      title: "Отзывы клиентов",
       placeholder:
-        "Отзывы от клиентов появятся здесь после завершения первых сделок. Ваше доверие — моя главная рекомендация.",
+        "Здесь появятся отзывы от клиентов. Ваше доверие — лучшая рекомендация.",
     },
     contact: {
       label: "Связаться",
-      title: "Оставьте заявку",
-      subtitle:
-        "Заполните форму и я свяжусь с вами в ближайшее время для обсуждения вашего вопроса.",
-      name: "Ваше имя",
+      title: "Напишите мне",
+      subtitle: "Расскажите, что нужно — и я предложу решение.",
+      name: "Имя",
       phone: "Телефон",
-      serviceType: "Тип услуги",
-      serviceTypes: [
-        "Покупка недвижимости",
-        "Продажа недвижимости",
-        "Консультация по новостройкам",
-        "Экспертное заключение",
-        "Экспресс-сопровождение сделки",
-        "Другое",
-      ],
-      comment: "Комментарий",
-      commentPlaceholder: "Расскажите подробнее о вашем запросе...",
-      submit: "Отправить заявку",
-      success: "Заявка отправлена! Я свяжусь с вами в ближайшее время.",
+      submit: "Отправить",
+      success: "Отправлено! Свяжусь с вами в ближайшее время.",
       error: "Произошла ошибка. Попробуйте ещё раз.",
       required: "Обязательное поле",
       duplicateWarning: "Такой номер уже зарегистрирован. Мы свяжемся с вами повторно.",
       callbackButton: "Перезвоните мне",
       callbackTitle: "Обратный звонок",
-      callbackDescription: "Оставьте контактные данные и я перезвоню вам в удобное время.",
+      callbackDescription: "Оставьте номер — перезвоню в удобное время.",
       callbackSubmit: "Перезвоните",
       callbackSuccess: "Заявка на звонок отправлена! Я скоро свяжусь с вами.",
     },
     faq: {
       label: "FAQ",
-      title: "Частые вопросы",
+      title: "Вопросы",
       items: [
         {
-          question: "Как выбрать район для покупки?",
-          answer: "Определите приоритеты: близость к метро, школам, паркам и инфраструктуре. Я помогу проанализировать районы с учётом вашего бюджета и образа жизни, предложив несколько вариантов для сравнения."
+          question: "Сколько стоит ваша помощь?",
+          answer: "Зависит от задачи. При покупке — комиссия от застройщика или продавца (часто для вас бесплатно). При продаже — обсуждается индивидуально. Первая консультация — без оплаты.",
         },
         {
-          question: "Какие документы нужны для сделки?",
-          answer: "Для покупки потребуется паспорт, для продажи — выписка из ЕГРН, правоустанавливающие документы и справки об отсутствии обременений. Я подготовлю полный пакет документов и проверю их юридическую чистоту."
+          question: "Вы работаете только с Петербургом?",
+          answer: "В основном Санкт-Петербург и Ленинградская область. Но если вопрос сложный — помогу найти коллегу в другом регионе.",
         },
         {
-          question: "Как проверить юридическую чистоту?",
-          answer: "Проверяю через Росреестр, суды и ФССП: обременения, аресты, долги по ЖКХ, правоустанавливающие документы и историю перехода прав. Это исключает риски оспаривания сделки после подписания договора."
+          question: "Как быстро можно закрыть сделку?",
+          answer: "Экспресс-сопровождение — 3–5 дней, если покупатель уже найден. Стандартная покупка — 2–3 недели. Продажа с рекламой — от 2 недель до месяца.",
         },
         {
-          question: "Сколько времени занимает сделка?",
-          answer: "Стандартная сделка купли-продажи занимает 2–4 недели от подписания договора до регистрации права собственности. Экспресс-сопровождение при готовом покупателе сокращает срок до 3–5 дней."
-        },
-        {
-          question: "Что такое экспресс-сопровождение?",
-          answer: "Это услуга для клиентов, у которых уже есть покупатель или продавец. Я беру на себя проверку документов, подготовку договора, сопровождение сделки и регистрацию перехода права."
-        },
-        {
-          question: "Есть ли скидки на новостройки?",
-          answer: "Да, как партнёр Setl Group я предоставляю скидку 2% на объекты холдинга. Также отслеживаю акции и специальные предложения других застройщиков, что позволяет дополнительно сэкономить."
+          question: "Что такое скидка 2% от Setl Group?",
+          answer: "Я — официальный партнёр холдинга Setl Group (ПЕТРОБЕТОН, Силла, Пelta и др.). При покупке через меня вы получаете скидку 2% от стоимости квартиры. На квартире за 10 млн это экономия 200 тысяч.",
         },
       ],
-    },
-    exitIntent: {
-      title: "Подождите!",
-      description: "Оставьте заявку и получите бесплатную консультацию по недвижимости",
-      name: "Ваше имя",
-      phone: "Телефон",
-      submit: "Получить консультацию",
-      success: "Спасибо! Я свяжусь с вами в ближайшее время.",
     },
     floating: {
       telegram: "Написать в Telegram",
       max: "Написать в Max",
     },
     footer: {
-      rights: "Все права защищены.",
-      madeIn: "Санкт-Петербург",
-      contacts: "Контакты",
-      address: "Офис: ул. Комсомола, 41",
-      quickLinks: "Навигация",
-      followMe: "Соцсети",
-      telegram: "Telegram",
-      vk: "ВКонтакте",
+      madeIn: "Санкт-Петербург, 2025",
     },
   },
   en: {
     nav: {
-      about: "About",
+      about: "How I Work",
       services: "Services",
       reviews: "Reviews",
       contact: "Contact",
       cian: "Properties on Cian",
     },
     hero: {
-      greeting: "Real Estate in St. Petersburg & LLO",
+      greeting: "Real Estate in St. Petersburg",
       name: "Ilya Ratnikov",
-      title: "Expert Realtor",
+      title: "Realtor",
       subtitle:
-        "Universal real estate specialist. A comprehensive approach to solving your tasks — from property selection to full deal support.",
-      cta: "Submit Request",
+        "I help you buy, sell, or value property in St. Petersburg. I handle the entire deal — from the first call to title registration: documents, calculations, viewings.",
+      cta: "Discuss Your Task",
       cian: "View Properties",
-      scroll: "Learn More",
+      scroll: "Scroll",
     },
     about: {
-      label: "About",
-      title: "Comprehensive Real Estate Approach",
+      label: "How I Work",
+      title: "From Call to Registration — All of It",
       description:
-        "I offer comprehensive real estate transaction support, including marketing and legal services. I will advise on new builds, provide an expert opinion, and organize property viewings. I actively promote properties on the market and ensure effective client interaction.",
-      mission: "Mission & Work Principles",
+        "You only make the decisions, I handle everything else. I find properties, verify legal status, negotiate, and prepare documents. If needed — I sell your property at the best price using targeted ads and closed databases.",
+      mission: "Setl Group",
       missionText:
-        "A comprehensive approach to real estate realization, including marketing and legal support. Partnership with Setl Group holding and consultations on new builds with a 2% discount. Our goal is to ensure effective property promotion and successful deal completion.",
-      partner: "Partner — Setl Group",
-    },
-    advantages: {
-      label: "Why Me",
-      title: "Your Advantage in Working With Me",
-      items: [
-        {
-          title: "Market Expertise & Analytics",
-          text: "Current market data allows establishing an objective property value, preventing financial losses from underpricing during sales or overpaying during purchases.",
-        },
-        {
-          title: "Legal Purity & Risk Minimization",
-          text: "Verification of title documents, property history, and legal capacity of parties — critical for preventing future deal disputes.",
-        },
-        {
-          title: "Professional Marketing",
-          text: "Maximum target audience reach through specialized channels: closed databases, targeted advertising. Expanding the search funnel including off-market properties.",
-        },
-        {
-          title: "Effective Negotiations",
-          text: "Acting as a mediator, I eliminate the emotional factor. Professional negotiation skills protect your interests and achieve optimal terms.",
-        },
-      ],
+        "Official partner of Setl Group — I offer a 2% discount on all their properties in St. Petersburg. Current promotions, floor plans, and prices at hand.",
+      partner: "Developer Partner",
     },
     services: {
       label: "Services",
-      title: "My Services",
-      subtitle:
-        "Marketing and legal support, new build consultations, property valuation, viewings, buyer outreach, counterparty verification, and contract preparation.",
+      title: "What I Do",
       items: [
         {
-          title: "Marketing & Legal Support",
-          text: "Full range of deal support services with all legal aspects covered.",
+          title: "Buying Property",
+          text: "Finding properties that match your criteria — from studios to country houses. Viewings, comparisons, document checks.",
         },
         {
-          title: "New Build Consultations",
-          text: "Information on new builds with a 2% discount on Setl Group properties.",
+          title: "Selling Property",
+          text: "Valuation, professional photos, listing on Cian and Avito, targeted ads, viewings, negotiations.",
         },
         {
-          title: "Expert Property Valuation",
-          text: "Calculation of the current market value of a real estate property.",
+          title: "Legal Support",
+          text: "Property verification through Rosreestr and courts. Contract preparation, title transfer registration.",
         },
         {
-          title: "Express Deal Support",
-          text: "For clients who already have a buyer. Full support including document verification and agreement formalization.",
+          title: "New Builds with Discount",
+          text: "Setl Group partner — 2% discount on all holding properties. I help you choose and lock in the best price.",
         },
       ],
     },
     stats: {
-      label: "Numbers",
+      label: "Experience",
       items: [
-        { value: "2+", label: "Years of Experience" },
-        { value: "15+", label: "Successful Deals" },
-        { value: "98%", label: "Satisfied Clients" },
-        { value: "24/7", label: "Available" },
+        { value: "15+", label: "deals" },
+        { value: "2", label: "years of practice" },
+        { value: "2%", label: "Setl Group discount" },
       ],
+    },
+    cases: {
+      label: "Cases",
+      title: "Work Results",
     },
     reviews: {
       label: "Reviews",
-      title: "What Clients Say",
+      title: "Client Reviews",
       placeholder:
-        "Client reviews will appear here after the first deals are completed. Your trust is my best recommendation.",
+        "Client reviews will appear here. Your trust is the best recommendation.",
     },
     contact: {
       label: "Contact",
-      title: "Submit a Request",
-      subtitle:
-        "Fill out the form and I will contact you shortly to discuss your inquiry.",
-      name: "Your Name",
+      title: "Write to Me",
+      subtitle: "Tell me what you need — I'll suggest a solution.",
+      name: "Name",
       phone: "Phone",
-      serviceType: "Service Type",
-      serviceTypes: [
-        "Buying Property",
-        "Selling Property",
-        "New Build Consultation",
-        "Expert Valuation",
-        "Express Deal Support",
-        "Other",
-      ],
-      comment: "Comment",
-      commentPlaceholder: "Tell us more about your request...",
-      submit: "Submit Request",
-      success:
-        "Request sent! I will contact you shortly.",
-      error: "An error occurred. Please try again.",
+      submit: "Send",
+      success: "Sent! I'll get back to you soon.",
+      error: "Something went wrong. Please try again.",
       required: "Required field",
-      duplicateWarning: "This number is already registered. We will contact you again.",
+      duplicateWarning: "This number is already registered. We'll contact you again.",
       callbackButton: "Call Me Back",
-      callbackTitle: "Callback Request",
-      callbackDescription: "Leave your contact details and I will call you back at a convenient time.",
+      callbackTitle: "Callback",
+      callbackDescription: "Leave your number — I'll call you at a convenient time.",
       callbackSubmit: "Call Me",
-      callbackSuccess: "Callback request sent! I will contact you soon.",
+      callbackSuccess: "Callback request sent! I'll contact you soon.",
     },
     faq: {
       label: "FAQ",
-      title: "Frequently Asked Questions",
+      title: "Questions",
       items: [
         {
-          question: "How to choose a neighborhood?",
-          answer: "Define your priorities: proximity to metro, schools, parks, and infrastructure. I will help analyze neighborhoods based on your budget and lifestyle, offering several options for comparison."
+          question: "How much do you charge?",
+          answer: "Depends on the task. For buying — commission from the developer or seller (often free for you). For selling — discussed individually. First consultation is free.",
         },
         {
-          question: "What documents are needed?",
-          answer: "For buying you need a passport, for selling — an extract from EGRN, title documents, and certificates of no encumbrances. I will prepare the full document package and verify their legal purity."
+          question: "Do you only work with St. Petersburg?",
+          answer: "Mostly St. Petersburg and Leningrad Oblast. But for complex cases I can find a colleague in another region.",
         },
         {
-          question: "How to verify legal purity?",
-          answer: "I check through Rosreestr, courts, and FSSP: encumbrances, arrests, utility debts, title documents, and ownership history. This eliminates risks of the deal being contested after signing."
+          question: "How fast can a deal close?",
+          answer: "Express support — 3–5 days if the buyer is already found. Standard purchase — 2–3 weeks. Selling with advertising — 2 weeks to a month.",
         },
         {
-          question: "How long does a deal take?",
-          answer: "A standard purchase-sale deal takes 2–4 weeks from signing the contract to registering ownership rights. Express support with a ready buyer reduces this to 3–5 days."
-        },
-        {
-          question: "What is express deal support?",
-          answer: "This is a service for clients who already have a buyer or seller. I handle document verification, contract preparation, deal support, and ownership transfer registration."
-        },
-        {
-          question: "Are there discounts on new builds?",
-          answer: "Yes, as a Setl Group partner I offer a 2% discount on the holding's properties. I also track promotions and special offers from other developers, allowing additional savings."
+          question: "What's the 2% Setl Group discount?",
+          answer: "I'm an official partner of Setl Group (PETROBETON, Silla, Pelta, etc.). When you buy through me, you get a 2% discount on the apartment price. On a 10M apartment, that's 200K in savings.",
         },
       ],
-    },
-    exitIntent: {
-      title: "Wait!",
-      description: "Leave a request and get a free real estate consultation",
-      name: "Your Name",
-      phone: "Phone",
-      submit: "Get Consultation",
-      success: "Thank you! I will contact you shortly.",
     },
     floating: {
       telegram: "Write on Telegram",
       max: "Write on Max",
     },
     footer: {
-      rights: "All rights reserved.",
-      madeIn: "Saint Petersburg",
-      contacts: "Contacts",
-      address: "Office: 41 Komsomola St.",
-      quickLinks: "Navigation",
-      followMe: "Social Media",
-      telegram: "Telegram",
-      vk: "VKontakte",
+      madeIn: "St. Petersburg, 2025",
     },
   },
 } as const;

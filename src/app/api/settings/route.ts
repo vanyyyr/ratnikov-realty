@@ -14,6 +14,9 @@ const PUBLIC_KEYS = [
   "address",
   "yandex_metrika_id",
   "show_reviews",
+  "show_cases",
+  "show_stats",
+  "commission_rate",
 ];
 
 export async function GET() {

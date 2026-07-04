@@ -1,22 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, type FormEvent, type ReactNode } from "react";
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -44,10 +35,6 @@ import {
 } from "@/components/ui/tooltip";
 import {
   Menu,
-  BarChart3,
-  ShieldCheck,
-  Megaphone,
-  Handshake,
   MessageCircle,
   ChevronDown,
   Phone,
@@ -58,7 +45,6 @@ import {
   ExternalLink,
   Quote,
   Star,
-  Globe,
   PhoneCall,
 } from "lucide-react";
 
@@ -70,33 +56,6 @@ function formatPhone(raw: string): string {
     return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
   }
   return raw;
-}
-
-function useCountUp(target: string, visible: boolean) {
-  const [display, setDisplay] = useState("0");
-  useEffect(() => {
-    if (!visible) return;
-    const numMatch = target.match(/[\d.]+/);
-    if (!numMatch) {
-      // Use requestAnimationFrame to avoid synchronous setState in effect
-      requestAnimationFrame(() => setDisplay(target));
-      return;
-    }
-    const num = parseFloat(numMatch[0]);
-    const suffix = target.replace(numMatch[0], "");
-    const duration = 1500;
-    const start = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = num * eased;
-      setDisplay(Number.isInteger(num) ? Math.round(current) + suffix : current.toFixed(1) + suffix);
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [visible, target]);
-  return display;
 }
 
 function FadeIn({
@@ -168,32 +127,6 @@ function SectionHeading({
   );
 }
 
-function StatItem({ value, label }: { value: string; label: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold: 0.3 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  const display = useCountUp(value, visible);
-  return (
-    <div ref={ref} className="text-center">
-      <div className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white mb-2 tracking-tight">
-        {display}
-      </div>
-      <div className="text-white/60 text-xs sm:text-sm uppercase tracking-[0.12em] font-medium">
-        {label}
-      </div>
-    </div>
-  );
-}
-
 /* ──────────────────────────── page ──────────────────────────── */
 
 export default function Home() {
@@ -202,9 +135,9 @@ export default function Home() {
   const nav = t("nav");
   const hero = t("hero");
   const about = t("about");
-  const advantages = t("advantages");
   const services = t("services");
   const stats = t("stats");
+  const cases = t("cases");
   const reviews = t("reviews");
   const contact = t("contact");
   const faq = t("faq");
@@ -217,8 +150,6 @@ export default function Home() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    serviceType: "",
-    comment: "",
   });
   const [loading, setLoading] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -228,16 +159,19 @@ export default function Home() {
     telegram: "https://t.me/ilyaratnikov",
     maxUrl: "https://max.ru",
     vk: "#",
-    instagram: "#",
-    whatsapp: "#",
     phoneRaw: "+79892467798",
     phone: "+7 (989) 246-77-98",
-    address: "Офис: ул. Комсомола, 41",
+    address: "Санкт-Петербург",
     metrikaId: "",
     showReviews: true,
+    showCases: true,
+    showStats: true,
   });
   const [dbReviews, setDbReviews] = useState<
     { id: string; name: string; text: string; rating: number; source: string | null; createdAt: string }[]
+  >([]);
+  const [dbCases, setDbCases] = useState<
+    { id: string; title: string; text: string; result: string | null }[]
   >([]);
 
   /* load public settings */
@@ -251,13 +185,13 @@ export default function Home() {
           telegram: s.social_telegram || prev.telegram,
           maxUrl: s.max_profile_url || prev.maxUrl,
           vk: s.social_vk || prev.vk,
-          instagram: s.social_instagram || prev.instagram,
-          whatsapp: s.social_whatsapp || prev.whatsapp,
           phoneRaw: s.phone || prev.phoneRaw,
           phone: s.phone ? formatPhone(s.phone) : prev.phone,
-          address: s.address ? "Офис: " + s.address : prev.address,
+          address: s.address || prev.address,
           metrikaId: s.yandex_metrika_id || prev.metrikaId,
           showReviews: s.show_reviews !== "false",
+          showCases: s.show_cases !== "false",
+          showStats: s.show_stats !== "false",
         }));
 
         // Yandex Metrika
@@ -284,6 +218,14 @@ export default function Home() {
         if (Array.isArray(data)) setDbReviews(data);
       })
       .catch(() => {});
+
+    // Load cases
+    fetch("/api/cases")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setDbCases(data);
+      })
+      .catch(() => {});
   }, []);
 
   // Callback dialog state
@@ -291,7 +233,7 @@ export default function Home() {
   const [callbackForm, setCallbackForm] = useState({ name: "", phone: "" });
   const [callbackLoading, setCallbackLoading] = useState(false);
 
-  // Floating buttons visibility (hide on scroll down, show on scroll up)
+  // Floating buttons visibility
   const [floatingVisible, setFloatingVisible] = useState(true);
 
   /* scroll listener */
@@ -337,8 +279,6 @@ export default function Home() {
         body: JSON.stringify({
           name: formData.name,
           phone: formData.phone,
-          serviceType: formData.serviceType || undefined,
-          comment: formData.comment || undefined,
         }),
       });
       if (res.ok) {
@@ -348,7 +288,7 @@ export default function Home() {
         } else {
           toast.success(contact.success);
         }
-        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
+        setFormData({ name: "", phone: "" });
       } else {
         toast.error(contact.error);
       }
@@ -358,9 +298,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  /* advantage icons */
-  const advIcons = [BarChart3, ShieldCheck, Megaphone, Handshake];
 
   /* callback form handler */
   const handleCallbackSubmit = useCallback(async (e: FormEvent) => {
@@ -404,6 +341,7 @@ export default function Home() {
   const navLinks = [
     { label: nav.about, id: "about" },
     { label: nav.services, id: "services" },
+    ...(siteSettings.showCases && dbCases.length > 0 ? [{ label: cases.label, id: "cases" }] : []),
     ...(siteSettings.showReviews ? [{ label: nav.reviews, id: "reviews" }] : []),
     { label: nav.contact, id: "contact" },
   ];
@@ -431,11 +369,11 @@ export default function Home() {
             className="flex items-center select-none"
           >
             <span
-              className={`text-[14px] font-semibold tracking-tight transition-colors ${
+              className={`text-[14px] font-bold tracking-tight transition-colors ${
                 scrolled ? "text-foreground" : "text-white"
               }`}
             >
-              {locale === "ru" ? "Личная визитка" : "Personal Card"}
+              РАТНИКОВ
             </span>
           </button>
 
@@ -499,8 +437,8 @@ export default function Home() {
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] pt-10">
-              <SheetTitle className="text-base font-semibold tracking-tight mb-8">
-                {locale === "ru" ? "Личная визитка" : "Personal Card"}
+              <SheetTitle className="text-base font-bold tracking-tight mb-8">
+                РАТНИКОВ
               </SheetTitle>
 
               <nav className="flex flex-col gap-1">
@@ -556,72 +494,49 @@ export default function Home() {
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-red-700" />
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-28 lg:py-0">
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-              {/* Text content */}
-              <div className="text-center lg:text-left order-2 lg:order-1">
-                <FadeIn>
-                  <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
-                    {hero.greeting}
-                  </p>
-                </FadeIn>
+            <div className="max-w-2xl mx-auto text-center lg:text-left">
+              <FadeIn>
+                <p className="text-red-500/90 text-xs sm:text-sm font-medium uppercase tracking-[0.2em] mb-6">
+                  {hero.greeting}
+                </p>
+              </FadeIn>
 
-                <FadeIn delay={0.1}>
-                  <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
-                    {hero.name}
-                  </h1>
-                </FadeIn>
+              <FadeIn delay={0.1}>
+                <h1 className="text-[clamp(2.75rem,8vw,5rem)] font-bold text-white tracking-tight leading-[1.05] mb-3">
+                  {hero.name}
+                </h1>
+              </FadeIn>
 
-                <FadeIn delay={0.2}>
-                  <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
-                    {hero.title}
-                  </p>
-                </FadeIn>
+              <FadeIn delay={0.2}>
+                <p className="text-red-500 text-lg sm:text-xl font-medium mb-6">
+                  {hero.title}
+                </p>
+              </FadeIn>
 
-                <FadeIn delay={0.3}>
-                  <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
-                    {hero.subtitle}
-                  </p>
-                </FadeIn>
+              <FadeIn delay={0.3}>
+                <p className="text-white/50 text-[15px] sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 mb-10">
+                  {hero.subtitle}
+                </p>
+              </FadeIn>
 
-                <FadeIn delay={0.4}>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                    <Button
-                      onClick={() => scrollTo("contact")}
-                      className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow btn-glow"
-                    >
-                      {hero.cta}
-                      <ArrowRight size={17} />
-                    </Button>
-                    <a
-                      href={siteSettings.cianUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
-                    >
-                      {hero.cian}
-                      <ExternalLink size={15} />
-                    </a>
-                  </div>
-                </FadeIn>
-              </div>
-
-              {/* Photo */}
-              <FadeIn delay={0.3} className="order-1 lg:order-2 flex justify-center lg:justify-end">
-                <div className="relative">
-                  <div className="absolute -left-2 top-6 bottom-6 w-[3px] bg-gradient-to-b from-red-700 via-red-600 to-red-800 rounded-full hidden sm:block" />
-                  <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-white/10">
-                    <Image
-                      src="/hero-photo.jpg"
-                      alt={hero.name}
-                      width={380}
-                      height={507}
-                      className="w-auto h-auto max-h-[50vh] lg:max-h-[75vh] object-cover object-top"
-                      priority
-                      fetchPriority="high"
-                    />
-                  </div>
-                  {/* Decorative corner */}
-                  <div className="absolute -bottom-3 -right-3 w-20 h-20 border-2 border-red-700/20 rounded-2xl -z-10 hidden sm:block" />
+              <FadeIn delay={0.4}>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                  <Button
+                    onClick={() => scrollTo("contact")}
+                    className="bg-red-700 hover:bg-red-800 text-white h-12 px-8 text-[15px] font-medium rounded-lg shadow-lg shadow-red-900/30 hover:shadow-red-900/40 transition-shadow btn-glow"
+                  >
+                    {hero.cta}
+                    <ArrowRight size={17} />
+                  </Button>
+                  <a
+                    href={siteSettings.cianUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 border border-white/15 text-white/90 hover:bg-white/10 hover:text-white hover:border-white/25 h-12 px-8 text-[15px] font-medium rounded-lg transition-all bg-transparent"
+                  >
+                    {hero.cian}
+                    <ExternalLink size={15} />
+                  </a>
                 </div>
               </FadeIn>
             </div>
@@ -636,99 +551,48 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════ ABOUT ═══════════════════ */}
+        {/* ═══════════════════ ABOUT / КАК Я РАБОТАЮ ═══════════════════ */}
         <section id="about" className="pt-28 sm:pt-32 pb-20 sm:pb-28 bg-white">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div>
-                <FadeIn>
-                  <SectionLabel>{about.label}</SectionLabel>
-                  <SectionHeading className="mb-6">{about.title}</SectionHeading>
-                </FadeIn>
-
-                <FadeIn delay={0.1}>
-                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
-                    {about.description}
-                  </p>
-                </FadeIn>
-
-                {/* Mission box */}
-                <FadeIn delay={0.2}>
-                  <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7 mb-8">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
-                      {about.mission}
-                    </h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {about.missionText}
-                    </p>
-                  </div>
-                </FadeIn>
-
-                <FadeIn delay={0.3}>
-                  <Badge className="bg-red-700 text-white hover:bg-red-800 text-xs px-4 py-1.5 rounded-md font-medium">
-                    {about.partner}
-                  </Badge>
-                </FadeIn>
-              </div>
-            </div>
-        </section>
-
-        {/* ═══════════════════ ADVANTAGES ═══════════════════ */}
-        <section className="py-20 sm:py-28 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <FadeIn className="text-center mb-14 sm:mb-16">
-              <SectionLabel>{advantages.label}</SectionLabel>
-              <SectionHeading>{advantages.title}</SectionHeading>
+            <FadeIn>
+              <SectionLabel>{about.label}</SectionLabel>
+              <SectionHeading className="mb-6">{about.title}</SectionHeading>
             </FadeIn>
 
-            <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-              {advantages.items.map((item, i) => {
-                const Icon = advIcons[i];
-                return (
-                  <FadeIn key={i} delay={i * 0.1}>
-                    <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.06] hover:-translate-y-1 transition-all duration-300 py-0">
-                      <CardContent className="p-6 sm:p-8">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center group-hover:bg-red-700 transition-colors duration-300">
-                            <Icon
-                              size={21}
-                              className="text-red-700 group-hover:text-white transition-colors duration-300"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="text-[15px] sm:text-base font-semibold text-foreground mb-2 leading-snug">
-                              {item.title}
-                            </h3>
-                            <p className="text-muted-foreground text-sm leading-relaxed">
-                              {item.text}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </FadeIn>
-                );
-              })}
-            </div>
+            <FadeIn delay={0.1}>
+              <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8">
+                {about.description}
+              </p>
+            </FadeIn>
+
+            {/* Setl Group partner mention */}
+            <FadeIn delay={0.2}>
+              <div className="bg-gray-50 border border-gray-200/60 rounded-xl p-6 sm:p-7">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground mb-3">
+                  {about.mission}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {about.missionText}
+                </p>
+              </div>
+            </FadeIn>
           </div>
         </section>
 
-        {/* ═══════════════════ SERVICES ═══════════════════ */}
-        <section id="services" className="py-20 sm:py-28 bg-white">
+        {/* ═══════════════════ SERVICES / ЧТО Я ДЕЛАЮ ═══════════════════ */}
+        <section id="services" className="py-20 sm:py-28 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <FadeIn className="text-center mb-14 sm:mb-16">
               <SectionLabel>{services.label}</SectionLabel>
-              <SectionHeading className="mb-4">{services.title}</SectionHeading>
-              <p className="text-muted-foreground text-[15px] sm:text-base max-w-2xl mx-auto leading-relaxed">
-                {services.subtitle}
-              </p>
+              <SectionHeading>{services.title}</SectionHeading>
             </FadeIn>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
               {services.items.map((item, i) => (
-                <FadeIn key={i} delay={i * 0.12}>
+                <FadeIn key={i} delay={i * 0.1}>
                   <Card className="group h-full border-gray-200/80 hover:border-red-200 hover:shadow-lg hover:shadow-red-700/[0.04] transition-all duration-300 py-0">
                     <CardContent className="p-6 sm:p-8 flex flex-col h-full">
-                      <span className="text-4xl sm:text-5xl font-bold text-red-700/20 group-hover:text-red-700/35 transition-colors duration-300 mb-4 block leading-none">
+                      <span className="text-3xl sm:text-4xl font-bold text-red-700/25 group-hover:text-red-700/40 transition-colors duration-300 mb-4 block leading-none">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <h3 className="text-[15px] font-semibold text-foreground mb-3 leading-snug">
@@ -745,97 +609,120 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════ STATS ═══════════════════ */}
-        <section className="py-20 sm:py-24 bg-[#0A0A0A] relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(185,28,28,0.06),transparent)]" />
-
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
-              {stats.items.map((item, i) => (
-                <FadeIn key={i} delay={i * 0.1}>
-                  <StatItem value={item.value} label={item.label} />
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ═══════════════════ REVIEWS ═══════════════════ */}
-        {siteSettings.showReviews && (
-        <section id="reviews" className="py-20 sm:py-28 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <FadeIn className="text-center mb-14 sm:mb-16">
-              <SectionLabel>{reviews.label}</SectionLabel>
-              <SectionHeading>{reviews.title}</SectionHeading>
-            </FadeIn>
-
-            {dbReviews.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {dbReviews.map((r, idx) => (
-                  <FadeIn key={r.id} delay={idx * 0.08}>
-                    <Card className="bg-gray-50 border-gray-200/60 hover:shadow-md transition-shadow h-full">
-                      <CardContent className="p-6 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-1.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                size={15}
-                                className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"}
-                              />
-                            ))}
-                          </div>
-                          <Quote size={18} className="text-red-200" />
-                        </div>
-                        <p className="text-sm text-foreground/80 leading-relaxed flex-1 mb-5">
-                          &ldquo;{r.text}&rdquo;
-                        </p>
-                        <div className="flex items-center gap-3 pt-3 border-t border-gray-200/60">
-                          <div className="w-9 h-9 bg-red-700 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-xs font-bold">
-                              {r.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">
-                              {r.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(r.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", {
-                                month: "long",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-                        </div>
+        {/* ═══════════════════ CASES ═══════════════════ */}
+        {siteSettings.showCases && dbCases.length > 0 && (
+          <section id="cases" className="py-20 sm:py-28 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <FadeIn className="text-center mb-14">
+                <SectionLabel>{cases.label}</SectionLabel>
+                <SectionHeading>{cases.title}</SectionHeading>
+              </FadeIn>
+              <div className="grid sm:grid-cols-2 gap-5">
+                {dbCases.map((c, idx) => (
+                  <FadeIn key={c.id} delay={idx * 0.08}>
+                    <Card className="bg-gray-50 border-gray-200/60 hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <p className="text-sm text-foreground/80 leading-relaxed mb-4">{c.text}</p>
+                        {c.result && <Badge className="bg-red-50 text-red-700 border-red-200">{c.result}</Badge>}
                       </CardContent>
                     </Card>
                   </FadeIn>
                 ))}
               </div>
-            ) : (
-              <FadeIn>
-                <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
-                    <Quote size={28} className="text-red-700/40" />
-                  </div>
-                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
-                    {reviews.placeholder}
-                  </p>
-                  <div className="flex items-center justify-center gap-1.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={18}
-                        className="text-gray-200 fill-gray-200"
-                      />
-                    ))}
-                  </div>
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════════════ STATS (compact) ═══════════════════ */}
+        {siteSettings.showStats && (
+          <section className="py-12 bg-[#0A0A0A]">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-around">
+              {stats.items.map((item) => (
+                <div key={item.label} className="text-center">
+                  <div className="text-3xl sm:text-4xl font-bold text-white">{item.value}</div>
+                  <div className="text-white/50 text-xs sm:text-sm mt-1">{item.label}</div>
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════════════ REVIEWS ═══════════════════ */}
+        {siteSettings.showReviews && (
+          <section id="reviews" className="py-20 sm:py-28 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <FadeIn className="text-center mb-14 sm:mb-16">
+                <SectionLabel>{reviews.label}</SectionLabel>
+                <SectionHeading>{reviews.title}</SectionHeading>
               </FadeIn>
-            )}
-          </div>
-        </section>
+
+              {dbReviews.length > 0 ? (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {dbReviews.map((r, idx) => (
+                    <FadeIn key={r.id} delay={idx * 0.08}>
+                      <Card className="bg-gray-50 border-gray-200/60 hover:shadow-md transition-shadow h-full">
+                        <CardContent className="p-6 flex flex-col h-full">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-1.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={15}
+                                  className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"}
+                                />
+                              ))}
+                            </div>
+                            <Quote size={18} className="text-red-200" />
+                          </div>
+                          <p className="text-sm text-foreground/80 leading-relaxed flex-1 mb-5">
+                            &ldquo;{r.text}&rdquo;
+                          </p>
+                          <div className="flex items-center gap-3 pt-3 border-t border-gray-200/60">
+                            <div className="w-9 h-9 bg-red-700 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-xs font-bold">
+                                {r.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {r.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(r.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", {
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </FadeIn>
+                  ))}
+                </div>
+              ) : (
+                <FadeIn>
+                  <div className="text-center py-16 sm:py-20 px-6 sm:px-10 bg-gray-50 rounded-2xl max-w-2xl mx-auto border border-gray-200/60">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+                      <Quote size={28} className="text-red-700/40" />
+                    </div>
+                    <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+                      {reviews.placeholder}
+                    </p>
+                    <div className="flex items-center justify-center gap-1.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={18}
+                          className="text-gray-200 fill-gray-200"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </FadeIn>
+              )}
+            </div>
+          </section>
         )}
 
         {/* ═══════════════════ FAQ ═══════════════════ */}
@@ -869,267 +756,126 @@ export default function Home() {
 
         {/* ═══════════════════ CONTACT ═══════════════════ */}
         <section id="contact" className="py-20 sm:py-28 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
-              {/* Left: info */}
-              <div className="lg:col-span-2">
-                <FadeIn>
-                  <SectionLabel>{contact.label}</SectionLabel>
-                  <SectionHeading className="mb-4">{contact.title}</SectionHeading>
-                  <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed mb-10">
-                    {contact.subtitle}
-                  </p>
-                </FadeIn>
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <FadeIn className="text-center mb-10">
+              <SectionLabel>{contact.label}</SectionLabel>
+              <SectionHeading className="mb-4">{contact.title}</SectionHeading>
+              <p className="text-muted-foreground text-[15px] sm:text-base leading-relaxed">
+                {contact.subtitle}
+              </p>
+            </FadeIn>
 
-                <FadeIn delay={0.15}>
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
-                    >
-                      <a
-                        href={siteSettings.telegram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <MessageCircle size={19} className="text-red-700" />
-                        Telegram
-                      </a>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-12 justify-start gap-3 text-[14px] font-medium border-gray-200 bg-white hover:border-red-200 hover:bg-red-50 hover:text-red-700 rounded-lg"
-                    >
-                      <a href={siteSettings.maxUrl} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle size={19} className="text-red-700" />
-                        Макс
-                      </a>
-                    </Button>
-                    <Button
-                      onClick={() => setCallbackOpen(true)}
-                      className="h-12 justify-start gap-3 text-[14px] font-medium bg-red-700 hover:bg-red-800 text-white rounded-lg"
-                    >
-                      <PhoneCall size={19} />
-                      {contact.callbackButton}
-                    </Button>
-                  </div>
-                </FadeIn>
-
-                {/* Contact info below messenger buttons */}
-                <FadeIn delay={0.25}>
-                  <div className="mt-10 space-y-4">
-                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
-                      <Phone size={16} className="text-red-700/70 flex-shrink-0" />
-                      <a href={"tel:" + siteSettings.phoneRaw} className="hover:text-red-700 transition-colors">{siteSettings.phone}</a>
-                    </div>
-                    <div className="flex items-center gap-3 text-muted-foreground text-sm">
-                      <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
-                      <span>{siteSettings.address}</span>
-                    </div>
-                  </div>
-                </FadeIn>
-              </div>
-
-              {/* Right: form */}
-              <FadeIn delay={0.1} className="lg:col-span-3">
-                <form
-                  onSubmit={handleSubmit}
-                  className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
-                >
-                  <div className="grid sm:grid-cols-2 gap-5 mb-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-xs font-medium">
-                        {contact.name} *
-                      </Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData((p) => ({ ...p, name: e.target.value }))
-                        }
-                        placeholder={contact.name}
-                        required
-                        className="h-11"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-xs font-medium">
-                        {contact.phone} *
-                      </Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData((p) => ({ ...p, phone: e.target.value }))
-                        }
-                        placeholder={contact.phone}
-                        required
-                        className="h-11"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-5">
-                    <Label className="text-xs font-medium">
-                      {contact.serviceType}
+            <FadeIn delay={0.1}>
+              <form
+                onSubmit={handleSubmit}
+                className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200/60"
+              >
+                <div className="grid sm:grid-cols-2 gap-5 mb-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-xs font-medium">
+                      {contact.name} *
                     </Label>
-                    <Select
-                      value={formData.serviceType}
-                      onValueChange={(v) =>
-                        setFormData((p) => ({ ...p, serviceType: v }))
-                      }
-                    >
-                      <SelectTrigger className="w-full h-11">
-                        <SelectValue placeholder={contact.serviceType} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {contact.serviceTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2 mb-6">
-                    <Label htmlFor="comment" className="text-xs font-medium">
-                      {contact.comment}
-                    </Label>
-                    <Textarea
-                      id="comment"
-                      value={formData.comment}
+                    <Input
+                      id="name"
+                      value={formData.name}
                       onChange={(e) =>
-                        setFormData((p) => ({ ...p, comment: e.target.value }))
+                        setFormData((p) => ({ ...p, name: e.target.value }))
                       }
-                      placeholder={contact.commentPlaceholder}
-                      rows={4}
-                      className="resize-none"
+                      placeholder={contact.name}
+                      required
+                      className="h-11"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-xs font-medium">
+                      {contact.phone} *
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, phone: e.target.value }))
+                      }
+                      placeholder={contact.phone}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                </div>
 
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                        {contact.submit}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Send size={16} />
-                        {contact.submit}
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              </FadeIn>
-            </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-red-700 hover:bg-red-800 text-white w-full h-12 text-[15px] font-medium rounded-lg shadow-lg shadow-red-700/20 hover:shadow-red-700/30 transition-shadow disabled:opacity-70"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      {contact.submit}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Send size={16} />
+                      {contact.submit}
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </FadeIn>
+
+            {/* Contact info & map link below form */}
+            <FadeIn delay={0.2}>
+              <div className="mt-8 flex flex-col sm:flex-row items-center sm:justify-between gap-4 text-muted-foreground text-sm">
+                <div className="flex items-center gap-3">
+                  <Phone size={16} className="text-red-700/70 flex-shrink-0" />
+                  <a href={"tel:" + siteSettings.phoneRaw} className="hover:text-red-700 transition-colors">
+                    {siteSettings.phone}
+                  </a>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin size={16} className="text-red-700/70 flex-shrink-0" />
+                  <span>{siteSettings.address}</span>
+                </div>
+                <a
+                  href="https://yandex.ru/maps/-/CDaGK-UB"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-red-700 hover:underline"
+                >
+                  <MapPin className="w-4 h-4" />
+                  {locale === "ru" ? "Показать на карте" : "Show on map"}
+                </a>
+              </div>
+            </FadeIn>
           </div>
         </section>
       </main>
 
       {/* ═══════════════════ FOOTER ═══════════════════ */}
       <footer className="bg-[#0A0A0A] text-white mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-8">
-            {/* Contacts */}
-            <div>
-              <p className="text-sm font-semibold tracking-tight mb-6">
-                {locale === "ru" ? "Личная визитка" : "Personal Card"}
-              </p>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
-                {footer.contacts}
-              </h3>
-              <div className="space-y-3">
-                <a
-                  href={"tel:" + siteSettings.phoneRaw}
-                  className="flex items-center gap-3 text-white/60 hover:text-white transition-colors text-sm"
-                >
-                  <Phone size={15} className="text-red-500/80 flex-shrink-0" />
-                  {siteSettings.phone}
-                </a>
-                <div className="flex items-center gap-3 text-white/60 text-sm">
-                  <MapPin size={15} className="text-red-500/80 flex-shrink-0" />
-                  {siteSettings.address}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick links */}
-            <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
-                {footer.quickLinks}
-              </h3>
-              <nav className="flex flex-col gap-3">
-                {navLinks.map((l) => (
-                  <button
-                    key={l.id}
-                    onClick={() => scrollTo(l.id)}
-                    className="text-left text-white/50 hover:text-white transition-colors text-sm"
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
-            {/* Social */}
-            <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40 mb-5">
-                {footer.followMe}
-              </h3>
-              <div className="flex flex-col gap-3">
-                <a
-                  href={siteSettings.telegram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
-                >
-                  <MessageCircle size={15} className="flex-shrink-0" />
-                  {footer.telegram}
-                </a>
-                <a
-                  href={siteSettings.vk}
-                  className="flex items-center gap-3 text-white/50 hover:text-white transition-colors text-sm"
-                >
-                  <Globe size={15} className="flex-shrink-0" />
-                  {footer.vk}
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
         <div className="border-t border-white/[0.06]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-white/40 text-xs">
-              &copy; 2025 {hero.name}. {footer.rights}
+              &copy; 2025 {hero.name}
             </p>
             <p className="text-white/40 text-xs">{footer.madeIn}</p>
           </div>

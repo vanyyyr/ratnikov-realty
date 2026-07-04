@@ -45,6 +45,7 @@ import {
   Trash2,
   UserCircle,
   AlertCircle,
+  Link2,
 } from "lucide-react";
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -79,13 +80,29 @@ interface Task {
   priority: string;
   dueDate: string | null;
   clientName: string | null;
+  leadId: string | null;
+  dealId: string | null;
+  lead: { id: string; name: string } | null;
+  deal: { id: string; title: string } | null;
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
 }
 
+interface LeadOption {
+  id: string;
+  name: string;
+}
+
+interface DealOption {
+  id: string;
+  title: string;
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [leads, setLeads] = useState<LeadOption[]>([]);
+  const [deals, setDeals] = useState<DealOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -96,6 +113,8 @@ export default function TasksPage() {
     priority: "medium",
     dueDate: "",
     clientName: "",
+    leadId: "",
+    dealId: "",
   });
 
   const fetchTasks = useCallback(async () => {
@@ -109,17 +128,38 @@ export default function TasksPage() {
     }
   }, []);
 
+  const fetchLeadsDeals = useCallback(async () => {
+    try {
+      const [leadsRes, dealsRes] = await Promise.all([
+        fetch("/api/admin/leads?limit=200"),
+        fetch("/api/admin/deals"),
+      ]);
+      if (leadsRes.ok) {
+        const json = await leadsRes.json();
+        const leadsArr = json.leads || json;
+        setLeads(leadsArr.map((l: { id: string; name: string }) => ({ id: l.id, name: l.name })));
+      }
+      if (dealsRes.ok) {
+        const dealsArr = await dealsRes.json();
+        setDeals(dealsArr.map((d: { id: string; title: string }) => ({ id: d.id, title: d.title })));
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     fetchTasks();
-  }, [fetchTasks]);
+    fetchLeadsDeals();
+  }, [fetchTasks, fetchLeadsDeals]);
 
   const filteredTasks = tasks.filter((t) =>
     statusFilter === "all" ? true : t.status === statusFilter
   );
 
   const resetForm = () => {
-    setForm({ title: "", description: "", priority: "medium", dueDate: "", clientName: "" });
+    setForm({ title: "", description: "", priority: "medium", dueDate: "", clientName: "", leadId: "", dealId: "" });
     setEditingTask(null);
   };
 
@@ -136,6 +176,8 @@ export default function TasksPage() {
       priority: task.priority,
       dueDate: task.dueDate ? task.dueDate.split("T")[0] : "",
       clientName: task.clientName || "",
+      leadId: task.leadId || "",
+      dealId: task.dealId || "",
     });
     setDialogOpen(true);
   };
@@ -152,6 +194,8 @@ export default function TasksPage() {
         priority: form.priority,
         dueDate: form.dueDate || null,
         clientName: form.clientName || null,
+        leadId: form.leadId || null,
+        dealId: form.dealId || null,
       };
 
       if (editingTask) {
@@ -248,7 +292,7 @@ export default function TasksPage() {
               Новая задача
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTask ? "Редактировать задачу" : "Новая задача"}
@@ -305,6 +349,46 @@ export default function TasksPage() {
                   onChange={(e) => setForm({ ...form, clientName: e.target.value })}
                   placeholder="Имя клиента (необязательно)"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Link2 className="w-3.5 h-3.5 text-gray-400" />
+                    Привязать к лиду
+                  </Label>
+                  <Select
+                    value={form.leadId}
+                    onValueChange={(v) => setForm({ ...form, leadId: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Не привязан" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leads.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Link2 className="w-3.5 h-3.5 text-gray-400" />
+                    Привязать к сделке
+                  </Label>
+                  <Select
+                    value={form.dealId}
+                    onValueChange={(v) => setForm({ ...form, dealId: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Не привязан" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deals.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -404,7 +488,7 @@ export default function TasksPage() {
                         </p>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400">
+                      <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}
@@ -434,6 +518,26 @@ export default function TasksPage() {
                           <Badge variant="secondary" className="bg-red-100 text-red-600 text-[10px] h-5">
                             Просрочено
                           </Badge>
+                        )}
+
+                        {/* Linked lead badge */}
+                        {task.lead && (
+                          <a href={`/admin/leads?id=${task.lead.id}`} className="inline-flex">
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 text-[10px] h-5 hover:bg-blue-100 cursor-pointer">
+                              <Link2 className="w-2.5 h-2.5 mr-1" />
+                              {task.lead.name}
+                            </Badge>
+                          </a>
+                        )}
+
+                        {/* Linked deal badge */}
+                        {task.deal && (
+                          <a href={`/admin/deals`} className="inline-flex">
+                            <Badge variant="secondary" className="bg-purple-50 text-purple-700 text-[10px] h-5 hover:bg-purple-100 cursor-pointer">
+                              <Link2 className="w-2.5 h-2.5 mr-1" />
+                              {task.deal.title}
+                            </Badge>
+                          </a>
                         )}
                       </div>
                     </div>

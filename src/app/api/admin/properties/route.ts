@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { title, address, type, rooms, area, price, status, cianUrl, description } = await req.json();
+  const { title, address, type, rooms, area, price, status, cianUrl, description, imageUrls } = await req.json();
   if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
   const property = await db.property.create({
     data: {
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       status: status || "available",
       cianUrl: cianUrl || null,
       description: description || null,
+      imageUrls: imageUrls || null,
     },
   });
   return NextResponse.json(property, { status: 201 });
@@ -47,6 +48,7 @@ export async function PUT(req: NextRequest) {
       ...(data.status !== undefined && { status: data.status }),
       ...(data.cianUrl !== undefined && { cianUrl: data.cianUrl || null }),
       ...(data.description !== undefined && { description: data.description || null }),
+      ...(data.imageUrls !== undefined && { imageUrls: data.imageUrls || null }),
     },
   });
   return NextResponse.json(property);

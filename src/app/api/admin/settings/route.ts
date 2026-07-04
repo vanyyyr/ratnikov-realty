@@ -17,6 +17,9 @@ const SETTINGS_KEYS = [
   "address",
   "max_profile_url",
   "show_reviews",
+  "show_cases",
+  "show_stats",
+  "commission_rate",
 ];
 
 export async function GET() {

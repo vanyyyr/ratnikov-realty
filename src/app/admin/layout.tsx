@@ -24,6 +24,8 @@ import {
   Settings,
   MessageSquare,
   Star,
+  BookOpen,
+  Trophy,
   LogOut,
   ExternalLink,
   Menu,
@@ -40,7 +42,9 @@ const NAV_ITEMS = [
   { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/admin/templates", label: "Шаблоны", icon: MessageSquare },
   { href: "/admin/reviews", label: "Отзывы", icon: Star },
+  { href: "/admin/cases", label: "Кейсы", icon: Trophy },
   { href: "/admin/settings", label: "Настройки", icon: Settings },
+  { href: "/admin/guide", label: "Гайд", icon: BookOpen },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -53,7 +57,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/analytics": "Аналитика",
   "/admin/templates": "Шаблоны",
   "/admin/reviews": "Отзывы",
+  "/admin/cases": "Кейсы",
   "/admin/settings": "Настройки",
+  "/admin/guide": "Гайд по CRM",
 };
 
 const emptySubscribe = () => () => {};

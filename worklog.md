@@ -511,3 +511,122 @@ Stage Summary:
 - Telegram notifications for leads were ALREADY working — they fire on every lead submission
 - To receive notifications: configure Bot Token and Chat ID in CRM Settings → "Уведомления Telegram"
 - Exit intent popup ("Подождите!") completely removed
+
+---
+Task ID: 1b
+Agent: fullstack-developer
+Task: Cases CRUD API + settings toggles
+
+Work Log:
+- Created `src/app/api/cases/route.ts` — public GET endpoint returning visible cases (isHidden=false), ordered by sortOrder ASC, createdAt DESC
+- Created `src/app/api/admin/cases/route.ts` — admin GET (all cases) + POST (create case with title, text, result, isHidden, sortOrder)
+- Created `src/app/api/admin/cases/[id]/route.ts` — admin PUT (update case) + DELETE (remove case)
+- Created `src/app/admin/cases/page.tsx` — full CRM admin page following reviews pattern:
+  - List of cases with title, text, result badge, visibility toggle, edit/delete buttons
+  - Create/Edit dialog with fields: title, text (Textarea), result, sortOrder, isHidden toggle
+  - Delete confirmation dialog (AlertDialog)
+  - Empty state with Trophy icon
+  - Red theme (bg-red-700) for primary actions
+  - Loading skeleton state
+- Modified `src/app/admin/settings/page.tsx` — added 3 new toggle/input cards BEFORE the reviews toggle:
+  a) "Раздел «Кейсы»" — Switch toggle for `show_cases` setting (auto-saves via fetch)
+  b) "Раздел статистики" — Switch toggle for `show_stats` setting (auto-saves via fetch)
+  c) "Комиссия" — number Input for `commission_rate` with Save button (default "3")
+  - Added Trophy, TrendingUp, Percent icons from lucide-react
+- Modified `src/app/admin/layout.tsx` — added Trophy icon import, "Кейсы" nav item after "Отзывы", "/admin/cases" page title
+- Lint passes clean
+
+Stage Summary:
+- Full cases CRUD is functional (3 API routes: public GET, admin GET/POST, admin PUT/DELETE)
+- Cases admin page at /admin/cases with full CRUD UI
+- Settings page now has Cases toggle, Stats toggle, and Commission input before the Reviews toggle
+- CRM sidebar includes "Кейсы" with Trophy icon between "Отзывы" and "Настройки"
+
+---
+Task ID: 3
+Agent: fullstack-developer
+Task: Create comprehensive CRM guide/documentation page
+
+Work Log:
+- Created src/app/admin/guide/page.tsx — full "use client" guide page with 11 sections
+- Guide covers: Дашборд, Лиды, Клиенты, Сделки, Объекты, Задачи, Аналитика, Шаблоны, Отзывы, Кейсы, Настройки
+- Each section has icon header, sub-headings, bullet lists, status chips, and contextual callout boxes (Tip/Note/Warning)
+- Sticky table of contents sidebar on desktop, horizontal pill nav on mobile
+- Clean layout with max-w-4xl content area, red-700 accents, gray body text, white cards with borders
+- All content written in Russian for the realtor audience
+- Added BookOpen icon import and "Гайд" nav item to admin layout NAV_ITEMS (after "Настройки")
+- Added "/admin/guide": "Гайд по CRM" to PAGE_TITLES
+- Fixed stray Chinese character in deals section (可以选择 → выберите)
+- Lint passes with zero errors
+
+Stage Summary:
+- CRM guide page created at /admin/guide with comprehensive documentation of all features
+- Sidebar updated with "Гайд" link (BookOpen icon, placed last before logout)
+- No other files modified
+
+---
+Task ID: 2
+Agent: fullstack-developer
+Task: Landing page full rewrite — human, personal, authentic tone
+
+Work Log:
+- Rewrote src/lib/i18n.ts completely:
+  - Removed "advantages" section entirely (merged into services)
+  - Removed "exitIntent" section
+  - Renamed "about" to "Как я работаю" with human, first-person copy
+  - Rewrote hero: greeting "Недвижимость в Петербурге", title "Риэлтор" (not "Риэлтор-эксперт"), CTA "Обсудить задачу" (not "Оставить заявку")
+  - Merged services into 4 cards: Покупка, Продажа, Юридическое сопровождение, Новостройки со скидкой
+  - Simplified stats to 3 items: 15+ сделок, 2 года практики, 2% скидка
+  - Rewrote FAQ to 4 human questions (not 6 generic ones)
+  - Simplified contact form (name + phone only, no service type dropdown or comment)
+  - Added "cases" section translations (RU: "Кейсы" / "Результаты работы", EN: "Cases" / "Work Results")
+  - Simplified footer to single line with year and city
+  - Updated all EN translations to match
+
+- Rewrote src/app/page.tsx completely (~450 lines, down from ~1258):
+  - Navbar: logo changed to "РАТНИКОВ" (removed "Личная визитка" and "недвижимость"), removed "Отзывы" from default nav, added conditional "Кейсы" link
+  - Hero: removed photo/Image import, removed 2-column grid, centered content with max-w-2xl, kept dark background + parallax
+  - "Как я работаю" section: centered max-w-3xl, Setl Group mention as info box (not badge), removed partner badge below
+  - "Что я делаю" section: 4 cards in 2x2/4col grid with numbered red icons, replaced old advantages + services sections
+  - NEW Cases section: loads from /api/cases, shows case cards with text + result badge, conditional on showCases + data existence
+  - NEW compact Stats bar: simple 3-stat row on black background, conditional on showStats
+  - Reviews: kept existing implementation with show/hide toggle from settings
+  - FAQ: kept accordion style with 4 rewritten items
+  - Contact: simplified to name+phone form, centered max-w-3xl, added Yandex Maps link below, removed messenger buttons sidebar layout
+  - Footer: stripped to minimal — copyright + city/year only
+  - Added showCases/showStats to siteSettings state, fetched from settings API
+  - Added dbCases state with /api/cases fetch
+  - Removed: Image import, Select/Textarea/SelectContent/SelectItem/SelectTrigger/SelectValue, BarChart3/ShieldCheck/Megaphone/Handshake/Globe icons, useCountUp hook, StatItem component, old advantages section, old about section, old stats section, exit intent popup, hero photo
+  - Kept: FadeIn, SectionLabel, SectionHeading, scroll progress bar, floating Telegram/Max buttons, callback dialog, form submission to /api/leads, sticky navbar, CIAN button, dynamic phone/address, Yandex Metrika, RU/EN toggle
+- Lint passes with zero errors
+
+Stage Summary:
+- Landing page completely rewritten to feel human and personal
+- All AI-sounding generic marketing language replaced with specific, first-person casual copy
+- Page reduced from ~1258 to ~450 lines by removing bloat
+- New features: Cases section (API-driven), compact stats bar, Yandex Maps link
+- Removed: hero photo, advantages section, exit intent, service type dropdown, verbose footer, "Личная визитка" branding
+
+---
+Task ID: 1a
+Agent: fullstack-developer
+Task: CRM features - commission, tasks-linked, gallery, timer, quick entry, Cian quick-add
+
+Work Log:
+- Feature 1 (Commission): Modified deals API PUT handler to auto-calculate commission when stage changes to `closed_won` (reads `commission_rate` from Settings, defaults to 3%). Added `commission` field to Deal interface and display in kanban cards with Percent icon. Added "Комиссия" settings section with `commission_rate` input field (type: number, DollarSign icon).
+- Feature 2 (Tasks linked): Rewrote tasks API to accept/save `leadId` and `dealId` in POST/PUT, include lead/deal relations in GET. Added `leadId` query param filter to GET. Rewrote tasks page with two Select dropdowns ("Привязать к лиду", "Привязать к сделке") in create/edit dialog. Added clickable badges for linked lead (blue) and deal (purple) in task list. Modified leads page to fetch and display linked tasks in the expanded lead detail view with priority dots and status badges.
+- Feature 3 (Photo gallery): Updated properties API to handle `imageUrls` field in POST/PUT. Added photo management section in property edit dialog: grid of thumbnails with delete buttons (using next/image unoptimized), URL input + "Добавить" button. Property cards now show first photo as header thumbnail with photo count badge.
+- Feature 4 (Days-on-market timer): Added `getDaysOnMarket()` helper to properties page. Available properties show a badge: >60 days = red, >30 days = amber, ≤30 days = gray. Format: "X дн." with Clock icon.
+- Feature 5 (Quick mobile lead entry): Added red background quick-add bar at top of leads page with Name + Phone inputs (stacked on mobile, side-by-side on desktop) and "Быстро добавить" button. Enter key advances from name to phone, then submits. Uses /api/leads POST endpoint.
+- Feature 6 (Cian quick-add): Created `mini-services/cian-parser/index.ts` (Bun server on port 3080) with `/parse?url=` endpoint that fetches Cian pages and extracts data via JSON-LD and regex fallbacks. Created `src/app/api/admin/properties/import/route.ts` as Next.js proxy. Added "Импорт с ЦИАН" button to properties page with dialog; on success opens create form pre-filled with extracted data.
+- Fixed LeadRow `toggleExpand` type from `void` to `Promise<void>` to match async implementation.
+- All lint checks pass cleanly.
+
+Stage Summary:
+- 6 CRM features implemented across 10 files modified/created
+- Commission auto-calculates on deal close with configurable rate
+- Tasks now link to leads and deals with visual badges and filtering
+- Properties have photo gallery management with next/image thumbnails
+- Days-on-market timer with color-coded badges
+- Quick lead entry bar optimized for mobile use
+- Cian parser mini-service ready to run with `bun --hot index.ts` in mini-services/cian-parser/

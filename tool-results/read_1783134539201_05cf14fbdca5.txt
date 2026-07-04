@@ -1,0 +1,804 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect, useCallback, useRef } from "react";
+     4→import { Button } from "@/components/ui/button";
+     5→import { Input } from "@/components/ui/input";
+     6→import { Textarea } from "@/components/ui/textarea";
+     7→import { Badge } from "@/components/ui/badge";
+     8→import { Skeleton } from "@/components/ui/skeleton";
+     9→import { Card } from "@/components/ui/card";
+    10→import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    11→import {
+    12→  Select,
+    13→  SelectContent,
+    14→  SelectItem,
+    15→  SelectTrigger,
+    16→  SelectValue,
+    17→} from "@/components/ui/select";
+    18→import {
+    19→  Table,
+    20→  TableBody,
+    21→  TableCell,
+    22→  TableHead,
+    23→  TableHeader,
+    24→  TableRow,
+    25→} from "@/components/ui/table";
+    26→import {
+    27→  AlertDialog,
+    28→  AlertDialogAction,
+    29→  AlertDialogCancel,
+    30→  AlertDialogContent,
+    31→  AlertDialogDescription,
+    32→  AlertDialogFooter,
+    33→  AlertDialogHeader,
+    34→  AlertDialogTitle,
+    35→  AlertDialogTrigger,
+    36→} from "@/components/ui/alert-dialog";
+    37→import {
+    38→  Dialog,
+    39→  DialogContent,
+    40→  DialogHeader,
+    41→  DialogTitle,
+    42→  DialogFooter,
+    43→} from "@/components/ui/dialog";
+    44→import {
+    45→  Popover,
+    46→  PopoverContent,
+    47→  PopoverTrigger,
+    48→} from "@/components/ui/popover";
+    49→import { toast } from "sonner";
+    50→import {
+    51→  Search,
+    52→  ChevronDown,
+    53→  ChevronRight,
+    54→  Trash2,
+    55→  Phone,
+    56→  UserCircle,
+    57→  Save,
+    58→  X,
+    59→  Download,
+    60→  Upload,
+    61→  Send,
+    62→  Copy,
+    63→  Tag,
+    64→  MessageSquare,
+    65→} from "lucide-react";
+    66→
+    67→interface Lead {
+    68→  id: string;
+    69→  name: string;
+    70→  phone: string;
+    71→  serviceType: string | null;
+    72→  comment: string | null;
+    73→  status: string;
+    74→  source: string | null;
+    75→  createdAt: string;
+    76→  updatedAt: string;
+    77→  notes: string | null;
+    78→  tags: string | null;
+    79→}
+    80→
+    81→interface MessageTemplate {
+    82→  id: string;
+    83→  name: string;
+    84→  content: string;
+    85→  category: string;
+    86→}
+    87→
+    88→const STATUS_MAP: Record<string, { label: string; color: string }> = {
+    89→  new: { label: "Новый", color: "bg-blue-100 text-blue-700" },
+    90→  contacted: { label: "Контактированный", color: "bg-yellow-100 text-yellow-700" },
+    91→  qualified: { label: "Квалифицированный", color: "bg-green-100 text-green-700" },
+    92→  lost: { label: "Потерянный", color: "bg-red-100 text-red-700" },
+    93→};
+    94→
+    95→const PREDEFINED_TAGS = ["VIP", "Покупатель", "Продавец", "Инвестор", "Арендатор", "Новостройка", "Вторичный рынок"];
+    96→
+    97→const TAG_PALETTE = [
+    98→  { bg: "bg-red-100", text: "text-red-700" },
+    99→  { bg: "bg-blue-100", text: "text-blue-700" },
+   100→  { bg: "bg-green-100", text: "text-green-700" },
+   101→  { bg: "bg-amber-100", text: "text-amber-700" },
+   102→  { bg: "bg-purple-100", text: "text-purple-700" },
+   103→  { bg: "bg-pink-100", text: "text-pink-700" },
+   104→];
+   105→
+   106→function getTagColor(tag: string) {
+   107→  let hash = 0;
+   108→  for (let i = 0; i < tag.length; i++) {
+   109→    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+   110→  }
+   111→  return TAG_PALETTE[Math.abs(hash) % TAG_PALETTE.length];
+   112→}
+   113→
+   114→function parseTags(tags: string | null): string[] {
+   115→  if (!tags) return [];
+   116→  try {
+   117→    const parsed = JSON.parse(tags);
+   118→    return Array.isArray(parsed) ? parsed : [];
+   119→  } catch {
+   120→    return tags.split(",").map((t) => t.trim()).filter(Boolean);
+   121→  }
+   122→}
+   123→
+   124→export default function LeadsPage() {
+   125→  const [leads, setLeads] = useState<Lead[]>([]);
+   126→  const [loading, setLoading] = useState(true);
+   127→  const [search, setSearch] = useState("");
+   128→  const [statusFilter, setStatusFilter] = useState("all");
+   129→  const [tagFilter, setTagFilter] = useState("");
+   130→  const [expandedId, setExpandedId] = useState<string | null>(null);
+   131→  const [editNotes, setEditNotes] = useState<Record<string, string>>({});
+   132→  const [editTags, setEditTags] = useState<Record<string, string>>({});
+   133→  const [savingNotes, setSavingNotes] = useState<string | null>(null);
+   134→  const [importOpen, setImportOpen] = useState(false);
+   135→  const [importFile, setImportFile] = useState<File | null>(null);
+   136→  const [importing, setImporting] = useState(false);
+   137→  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+   138→  const fileInputRef = useRef<HTMLInputElement>(null);
+   139→
+   140→  const fetchLeads = useCallback(async () => {
+   141→    try {
+   142→      const params = new URLSearchParams();
+   143→      if (statusFilter !== "all") params.set("status", statusFilter);
+   144→      if (search) params.set("search", search);
+   145→      if (tagFilter) params.set("tags", tagFilter);
+   146→      const res = await fetch(`/api/admin/leads?${params}`);
+   147→      if (res.ok) {
+   148→        const json = await res.json();
+   149→        setLeads(json.leads || json);
+   150→      }
+   151→    } catch {
+   152→      // silent
+   153→    } finally {
+   154→      setLoading(false);
+   155→    }
+   156→  }, [statusFilter, search, tagFilter]);
+   157→
+   158→  useEffect(() => {
+   159→    setLoading(true);
+   160→    fetchLeads();
+   161→  }, [fetchLeads]);
+   162→
+   163→  const handleStatusChange = async (id: string, newStatus: string) => {
+   164→    try {
+   165→      const res = await fetch("/api/admin/leads", {
+   166→        method: "PUT",
+   167→        headers: { "Content-Type": "application/json" },
+   168→        body: JSON.stringify({ id, status: newStatus }),
+   169→      });
+   170→      if (res.ok) {
+   171→        toast.success("Статус обновлён");
+   172→        fetchLeads();
+   173→      }
+   174→    } catch {
+   175→      toast.error("Ошибка обновления");
+   176→    }
+   177→  };
+   178→
+   179→  const handleDelete = async (id: string) => {
+   180→    try {
+   181→      const res = await fetch(`/api/admin/leads?id=${id}`, { method: "DELETE" });
+   182→      if (res.ok) {
+   183→        toast.success("Лид удалён");
+   184→        fetchLeads();
+   185→      }
+   186→    } catch {
+   187→      toast.error("Ошибка удаления");
+   188→    }
+   189→  };
+   190→
+   191→  const handleSaveNotes = async (id: string) => {
+   192→    setSavingNotes(id);
+   193→    try {
+   194→      const res = await fetch("/api/admin/leads", {
+   195→        method: "PUT",
+   196→        headers: { "Content-Type": "application/json" },
+   197→        body: JSON.stringify({ id, notes: editNotes[id] || "", tags: editTags[id] || "[]" }),
+   198→      });
+   199→      if (res.ok) {
+   200→        toast.success("Сохранено");
+   201→        fetchLeads();
+   202→      }
+   203→    } catch {
+   204→      toast.error("Ошибка сохранения");
+   205→    } finally {
+   206→      setSavingNotes(null);
+   207→    }
+   208→  };
+   209→
+   210→  const toggleExpand = (id: string) => {
+   211→    if (expandedId === id) {
+   212→      setExpandedId(null);
+   213→    } else {
+   214→      setExpandedId(id);
+   215→      const lead = leads.find((l) => l.id === id);
+   216→      if (lead) {
+   217→        setEditNotes((prev) => ({ ...prev, [id]: lead.notes || "" }));
+   218→        setEditTags((prev) => ({ ...prev, [id]: parseTags(lead.tags).join(", ") }));
+   219→      }
+   220→    }
+   221→  };
+   222→
+   223→  const handleImport = async () => {
+   224→    if (!importFile) return;
+   225→    setImporting(true);
+   226→    try {
+   227→      const formData = new FormData();
+   228→      formData.append("file", importFile);
+   229→      const res = await fetch("/api/admin/import/leads", {
+   230→        method: "POST",
+   231→        body: formData,
+   232→      });
+   233→      if (res.ok) {
+   234→        const json = await res.json();
+   235→        toast.success(`Импортировано: ${json.count} лидов`);
+   236→        setImportOpen(false);
+   237→        setImportFile(null);
+   238→        fetchLeads();
+   239→      } else {
+   240→        toast.error("Ошибка импорта");
+   241→      }
+   242→    } catch {
+   243→      toast.error("Ошибка импорта");
+   244→    } finally {
+   245→      setImporting(false);
+   246→    }
+   247→  };
+   248→
+   249→  const fetchTemplates = async () => {
+   250→    try {
+   251→      const res = await fetch("/api/admin/templates");
+   252→      if (res.ok) {
+   253→        const json = await res.json();
+   254→        setTemplates(Array.isArray(json) ? json : json.templates || []);
+   255→      }
+   256→    } catch {
+   257→      // silent
+   258→    }
+   259→  };
+   260→
+   261→  const copyTemplate = async (template: MessageTemplate, leadName: string) => {
+   262→    const text = template.content.replace(/\{name\}/gi, leadName);
+   263→    await navigator.clipboard.writeText(text);
+   264→    toast.success("Шаблон скопирован");
+   265→  };
+   266→
+   267→  const getPhoneDigits = (phone: string) => phone.replace(/\D/g, "");
+   268→
+   269→  const formatDate = (dateStr: string) => {
+   270→    return new Date(dateStr).toLocaleDateString("ru-RU", {
+   271→      day: "2-digit",
+   272→      month: "2-digit",
+   273→      year: "numeric",
+   274→      hour: "2-digit",
+   275→      minute: "2-digit",
+   276→    });
+   277→  };
+   278→
+   279→  const getServiceLabel = (type: string | null) => {
+   280→    const map: Record<string, string> = {
+   281→      buy: "Покупка",
+   282→      sell: "Продажа",
+   283→      consultation: "Консультация",
+   284→      newbuild: "Новостройки",
+   285→    };
+   286→    return type ? map[type] || type : "—";
+   287→  };
+   288→
+   289→  return (
+   290→    <div className="space-y-4">
+   291→      {/* Filters */}
+   292→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   293→        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center w-full sm:w-auto">
+   294→          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+   295→            <TabsList className="overflow-x-auto">
+   296→              <TabsTrigger value="all">Все</TabsTrigger>
+   297→              <TabsTrigger value="new">Новые</TabsTrigger>
+   298→              <TabsTrigger value="contacted">Контактированные</TabsTrigger>
+   299→              <TabsTrigger value="qualified">Квалифицированные</TabsTrigger>
+   300→              <TabsTrigger value="lost">Потерянные</TabsTrigger>
+   301→            </TabsList>
+   302→          </Tabs>
+   303→          <Select value={tagFilter} onValueChange={(v) => setTagFilter(v === "__all__" ? "" : v)}>
+   304→            <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm">
+   305→              <SelectValue placeholder="Все теги" />
+   306→            </SelectTrigger>
+   307→            <SelectContent>
+   308→              <SelectItem value="__all__">Все теги</SelectItem>
+   309→              {PREDEFINED_TAGS.map((tag) => (
+   310→                <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+   311→              ))}
+   312→            </SelectContent>
+   313→          </Select>
+   314→        </div>
+   315→        <div className="flex items-center gap-2 w-full sm:w-auto">
+   316→          <div className="relative flex-1 sm:w-64">
+   317→            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+   318→            <Input
+   319→              placeholder="Поиск по имени или телефону..."
+   320→              value={search}
+   321→              onChange={(e) => setSearch(e.target.value)}
+   322→              className="pl-9"
+   323→            />
+   324→          </div>
+   325→          <Button variant="outline" size="sm" onClick={() => window.open("/api/admin/export/leads")}>
+   326→            <Download className="w-4 h-4 sm:mr-1" />
+   327→            <span className="hidden sm:inline">Экспорт CSV</span>
+   328→          </Button>
+   329→          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+   330→            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+   331→              <Upload className="w-4 h-4 sm:mr-1" />
+   332→              <span className="hidden sm:inline">Импорт CSV</span>
+   333→            </Button>
+   334→            <DialogContent className="sm:max-w-md">
+   335→              <DialogHeader>
+   336→                <DialogTitle>Импорт лидов из CSV</DialogTitle>
+   337→              </DialogHeader>
+   338→              <div className="space-y-4">
+   339→                <Input
+   340→                  ref={fileInputRef}
+   341→                  type="file"
+   342→                  accept=".csv"
+   343→                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+   344→                />
+   345→                <p className="text-xs text-gray-400">
+   346→                  Формат: Name, Phone, ServiceType, Status, Source, Comment
+   347→                </p>
+   348→              </div>
+   349→              <DialogFooter>
+   350→                <Button variant="outline" onClick={() => setImportOpen(false)}>Отмена</Button>
+   351→                <Button
+   352→                  className="bg-red-700 hover:bg-red-800"
+   353→                  onClick={handleImport}
+   354→                  disabled={!importFile || importing}
+   355→                >
+   356→                  {importing ? "Импорт..." : "Импортировать"}
+   357→                </Button>
+   358→              </DialogFooter>
+   359→            </DialogContent>
+   360→          </Dialog>
+   361→        </div>
+   362→      </div>
+   363→
+   364→      {/* Table - desktop */}
+   365→      <Card>
+   366→        {loading ? (
+   367→          <div className="p-4 space-y-3">
+   368→            {[...Array(5)].map((_, i) => (
+   369→              <Skeleton key={i} className="h-12 w-full" />
+   370→            ))}
+   371→          </div>
+   372→        ) : leads.length === 0 ? (
+   373→          <div className="py-16 text-center text-gray-400">
+   374→            <UserCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+   375→            <p className="text-sm">Лиды не найдены</p>
+   376→          </div>
+   377→        ) : (
+   378→          <>
+   379→            {/* Desktop table */}
+   380→            <div className="hidden md:block overflow-x-auto">
+   381→              <Table>
+   382→                <TableHeader>
+   383→                  <TableRow>
+   384→                    <TableHead className="w-8"></TableHead>
+   385→                    <TableHead>Имя</TableHead>
+   386→                    <TableHead>Телефон</TableHead>
+   387→                    <TableHead>Услуга</TableHead>
+   388→                    <TableHead>Теги</TableHead>
+   389→                    <TableHead>Статус</TableHead>
+   390→                    <TableHead>Дата</TableHead>
+   391→                    <TableHead className="w-10"></TableHead>
+   392→                  </TableRow>
+   393→                </TableHeader>
+   394→                <TableBody>
+   395→                  {leads.map((lead) => {
+   396→                    const isExpanded = expandedId === lead.id;
+   397→                    const statusInfo = STATUS_MAP[lead.status] || STATUS_MAP.new;
+   398→                    const tags = parseTags(lead.tags);
+   399→                    return (
+   400→                      <LeadRow
+   401→                        key={lead.id}
+   402→                        lead={lead}
+   403→                        isExpanded={isExpanded}
+   404→                        statusInfo={statusInfo}
+   405→                        tags={tags}
+   406→                        expandedId={expandedId}
+   407→                        editNotes={editNotes}
+   408→                        editTags={editTags}
+   409→                        savingNotes={savingNotes}
+   410→                        toggleExpand={toggleExpand}
+   411→                        handleStatusChange={handleStatusChange}
+   412→                        handleDelete={handleDelete}
+   413→                        handleSaveNotes={handleSaveNotes}
+   414→                        setEditNotes={setEditNotes}
+   415→                        setEditTags={setEditTags}
+   416→                        formatDate={formatDate}
+   417→                        getServiceLabel={getServiceLabel}
+   418→                        getPhoneDigits={getPhoneDigits}
+   419→                        fetchTemplates={fetchTemplates}
+   420→                        templates={templates}
+   421→                        copyTemplate={copyTemplate}
+   422→                      />
+   423→                    );
+   424→                  })}
+   425→                </TableBody>
+   426→              </Table>
+   427→            </div>
+   428→
+   429→            {/* Mobile cards */}
+   430→            <div className="md:hidden space-y-3 p-3">
+   431→              {leads.map((lead) => {
+   432→                const statusInfo = STATUS_MAP[lead.status] || STATUS_MAP.new;
+   433→                const tags = parseTags(lead.tags);
+   434→                const phoneDigits = getPhoneDigits(lead.phone);
+   435→                return (
+   436→                  <Card key={lead.id} className="p-4 space-y-3">
+   437→                    <div className="flex items-start justify-between">
+   438→                      <div className="min-w-0">
+   439→                        <h3 className="font-medium text-sm truncate">{lead.name}</h3>
+   440→                        <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
+   441→                          <Phone className="w-3.5 h-3.5" />
+   442→                          <a href={`tel:${lead.phone}`} className="hover:text-red-700">{lead.phone}</a>
+   443→                        </div>
+   444→                      </div>
+   445→                      <Badge variant="secondary" className={`text-xs flex-shrink-0 ${statusInfo.color}`}>
+   446→                        {statusInfo.label}
+   447→                      </Badge>
+   448→                    </div>
+   449→
+   450→                    {tags.length > 0 && (
+   451→                      <div className="flex flex-wrap gap-1">
+   452→                        {tags.map((tag) => {
+   453→                          const c = getTagColor(tag);
+   454→                          return (
+   455→                            <Badge key={tag} variant="secondary" className={`text-[10px] ${c.bg} ${c.text}`}>{tag}</Badge>
+   456→                          );
+   457→                        })}
+   458→                      </div>
+   459→                    )}
+   460→
+   461→                    <div className="flex items-center justify-between text-xs text-gray-400">
+   462→                      <span>{getServiceLabel(lead.serviceType)}</span>
+   463→                      <span>{formatDate(lead.createdAt)}</span>
+   464→                    </div>
+   465→
+   466→                    <div className="flex items-center gap-1 pt-2 border-t border-gray-100">
+   467→                      {phoneDigits && (
+   468→                        <Button variant="ghost" size="sm" className="h-9 text-xs" asChild>
+   469→                          <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer">
+   470→                            <Send className="w-3.5 h-3.5 mr-1" /> Telegram
+   471→                          </a>
+   472→                        </Button>
+   473→                      )}
+   474→                      <Button variant="ghost" size="sm" className="h-9 text-xs" asChild>
+   475→                        <a href="https://max.ru/" target="_blank" rel="noopener noreferrer">
+   476→                          Max
+   477→                        </a>
+   478→                      </Button>
+   479→                      <div className="ml-auto flex gap-1">
+   480→                        <Popover>
+   481→                          <PopoverTrigger asChild>
+   482→                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={fetchTemplates}>
+   483→                              <MessageSquare className="w-4 h-4 text-gray-400" />
+   484→                            </Button>
+   485→                          </PopoverTrigger>
+   486→                          <PopoverContent className="w-64 p-2" align="end">
+   487→                            <p className="text-xs font-semibold text-gray-600 px-2 pb-2">Шаблоны</p>
+   488→                            {templates.length === 0 && <p className="text-xs text-gray-400 px-2">Нет шаблонов</p>}
+   489→                            {templates.map((t) => (
+   490→                              <button
+   491→                                key={t.id}
+   492→                                className="w-full text-left px-2 py-1.5 rounded-md hover:bg-gray-100 text-xs transition-colors"
+   493→                                onClick={() => copyTemplate(t, lead.name)}
+   494→                              >
+   495→                                <span className="font-medium">{t.name}</span>
+   496→                                <p className="text-gray-400 truncate mt-0.5">{t.content}</p>
+   497→                              </button>
+   498→                            ))}
+   499→                          </PopoverContent>
+   500→                        </Popover>
+   501→                        <AlertDialog>
+   502→                          <AlertDialogTrigger asChild>
+   503→                            <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-600">
+   504→                              <Trash2 className="w-4 h-4" />
+   505→                            </Button>
+   506→                          </AlertDialogTrigger>
+   507→                          <AlertDialogContent>
+   508→                            <AlertDialogHeader>
+   509→                              <AlertDialogTitle>Удалить лид?</AlertDialogTitle>
+   510→                              <AlertDialogDescription>
+   511→                                Лид &quot;{lead.name}&quot; будет удалён навсегда.
+   512→                              </AlertDialogDescription>
+   513→                            </AlertDialogHeader>
+   514→                            <AlertDialogFooter>
+   515→                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+   516→                              <AlertDialogAction onClick={() => handleDelete(lead.id)} className="bg-red-700 hover:bg-red-800">Удалить</AlertDialogAction>
+   517→                            </AlertDialogFooter>
+   518→                          </AlertDialogContent>
+   519→                        </AlertDialog>
+   520→                      </div>
+   521→                    </div>
+   522→                  </Card>
+   523→                );
+   524→              })}
+   525→            </div>
+   526→          </>
+   527→        )}
+   528→      </Card>
+   529→
+   530→      {leads.length > 0 && (
+   531→        <p className="text-xs text-gray-400 text-right">
+   532→          Всего: {leads.length} лидов
+   533→        </p>
+   534→      )}
+   535→    </div>
+   536→  );
+   537→}
+   538→
+   539→function LeadRow({
+   540→  lead,
+   541→  isExpanded,
+   542→  statusInfo,
+   543→  tags,
+   544→  expandedId,
+   545→  editNotes,
+   546→  editTags,
+   547→  savingNotes,
+   548→  toggleExpand,
+   549→  handleStatusChange,
+   550→  handleDelete,
+   551→  handleSaveNotes,
+   552→  setEditNotes,
+   553→  setEditTags,
+   554→  formatDate,
+   555→  getServiceLabel,
+   556→  getPhoneDigits,
+   557→  fetchTemplates,
+   558→  templates,
+   559→  copyTemplate,
+   560→}: {
+   561→  lead: Lead;
+   562→  isExpanded: boolean;
+   563→  statusInfo: { label: string; color: string };
+   564→  tags: string[];
+   565→  expandedId: string | null;
+   566→  editNotes: Record<string, string>;
+   567→  editTags: Record<string, string>;
+   568→  savingNotes: string | null;
+   569→  toggleExpand: (id: string) => void;
+   570→  handleStatusChange: (id: string, status: string) => Promise<void>;
+   571→  handleDelete: (id: string) => Promise<void>;
+   572→  handleSaveNotes: (id: string) => Promise<void>;
+   573→  setEditNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+   574→  setEditTags: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+   575→  formatDate: (d: string) => string;
+   576→  getServiceLabel: (t: string | null) => string;
+   577→  getPhoneDigits: (p: string) => string;
+   578→  fetchTemplates: () => Promise<void>;
+   579→  templates: MessageTemplate[];
+   580→  copyTemplate: (t: MessageTemplate, name: string) => Promise<void>;
+   581→}) {
+   582→  const phoneDigits = getPhoneDigits(lead.phone);
+   583→
+   584→  return (
+   585→    <>
+   586→      <TableRow
+   587→        key={lead.id}
+   588→        className="cursor-pointer hover:bg-gray-50"
+   589→        onClick={() => toggleExpand(lead.id)}
+   590→      >
+   591→        <TableCell className="p-2">
+   592→          {isExpanded ? (
+   593→            <ChevronDown className="w-4 h-4 text-gray-400" />
+   594→          ) : (
+   595→            <ChevronRight className="w-4 h-4 text-gray-400" />
+   596→          )}
+   597→        </TableCell>
+   598→        <TableCell className="font-medium">{lead.name}</TableCell>
+   599→        <TableCell>
+   600→          <span className="flex items-center gap-1 text-gray-600">
+   601→            <Phone className="w-3 h-3" />
+   602→            {lead.phone}
+   603→          </span>
+   604→        </TableCell>
+   605→        <TableCell className="text-gray-600">
+   606→          {getServiceLabel(lead.serviceType)}
+   607→        </TableCell>
+   608→        <TableCell>
+   609→          <div className="flex flex-wrap gap-1">
+   610→            {tags.map((tag) => {
+   611→              const c = getTagColor(tag);
+   612→              return (
+   613→                <Badge key={tag} variant="secondary" className={`text-[10px] ${c.bg} ${c.text}`}>{tag}</Badge>
+   614→              );
+   615→            })}
+   616→          </div>
+   617→        </TableCell>
+   618→        <TableCell>
+   619→          <Badge
+   620→            variant="secondary"
+   621→            className={statusInfo.color}
+   622→            onClick={(e) => e.stopPropagation()}
+   623→          >
+   624→            <Select
+   625→              value={lead.status}
+   626→              onValueChange={(v) => handleStatusChange(lead.id, v)}
+   627→            >
+   628→              <SelectTrigger className="h-6 border-0 bg-transparent p-0 text-xs font-normal focus:ring-0 w-auto min-w-[100px]">
+   629→                <SelectValue />
+   630→              </SelectTrigger>
+   631→              <SelectContent>
+   632→                <SelectItem value="new">Новый</SelectItem>
+   633→                <SelectItem value="contacted">Контактированный</SelectItem>
+   634→                <SelectItem value="qualified">Квалифицированный</SelectItem>
+   635→                <SelectItem value="lost">Потерянный</SelectItem>
+   636→              </SelectContent>
+   637→            </Select>
+   638→          </Badge>
+   639→        </TableCell>
+   640→        <TableCell className="text-gray-500 text-xs">
+   641→          {formatDate(lead.createdAt)}
+   642→        </TableCell>
+   643→        <TableCell>
+   644→          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+   645→            {phoneDigits && (
+   646→              <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-blue-500" asChild>
+   647→                <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer" title="Telegram">
+   648→                  <Send className="w-3.5 h-3.5" />
+   649→                </a>
+   650→              </Button>
+   651→            )}
+   652→            <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600" asChild>
+   653→              <a href="https://max.ru/" target="_blank" rel="noopener noreferrer" title="Max">
+   654→                <span className="text-[10px] font-bold">M</span>
+   655→              </a>
+   656→            </Button>
+   657→            <Popover>
+   658→              <PopoverTrigger asChild>
+   659→                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600" onClick={fetchTemplates} title="Шаблоны">
+   660→                  <Copy className="w-3.5 h-3.5" />
+   661→                </Button>
+   662→              </PopoverTrigger>
+   663→              <PopoverContent className="w-64 p-2" align="end">
+   664→                <p className="text-xs font-semibold text-gray-600 px-2 pb-2">Шаблоны</p>
+   665→                {templates.length === 0 && <p className="text-xs text-gray-400 px-2">Нет шаблонов</p>}
+   666→                {templates.map((t) => (
+   667→                  <button
+   668→                    key={t.id}
+   669→                    className="w-full text-left px-2 py-1.5 rounded-md hover:bg-gray-100 text-xs transition-colors"
+   670→                    onClick={() => copyTemplate(t, lead.name)}
+   671→                  >
+   672→                    <span className="font-medium">{t.name}</span>
+   673→                    <p className="text-gray-400 truncate mt-0.5">{t.content}</p>
+   674→                  </button>
+   675→                ))}
+   676→              </PopoverContent>
+   677→            </Popover>
+   678→            <AlertDialog>
+   679→              <AlertDialogTrigger asChild>
+   680→                <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-600">
+   681→                  <Trash2 className="w-3.5 h-3.5" />
+   682→                </Button>
+   683→              </AlertDialogTrigger>
+   684→              <AlertDialogContent>
+   685→                <AlertDialogHeader>
+   686→                  <AlertDialogTitle>Удалить лид?</AlertDialogTitle>
+   687→                  <AlertDialogDescription>
+   688→                    Лид &quot;{lead.name}&quot; будет удалён навсегда.
+   689→                  </AlertDialogDescription>
+   690→                </AlertDialogHeader>
+   691→                <AlertDialogFooter>
+   692→                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+   693→                  <AlertDialogAction onClick={() => handleDelete(lead.id)} className="bg-red-700 hover:bg-red-800">Удалить</AlertDialogAction>
+   694→                </AlertDialogFooter>
+   695→              </AlertDialogContent>
+   696→            </AlertDialog>
+   697→          </div>
+   698→        </TableCell>
+   699→      </TableRow>
+   700→      {isExpanded && (
+   701→        <TableRow key={`${lead.id}-expanded`}>
+   702→          <TableCell colSpan={8} className="bg-gray-50 px-8 py-4">
+   703→            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+   704→              <div className="space-y-3">
+   705→                <h4 className="text-sm font-semibold text-gray-700">Информация</h4>
+   706→                <div className="space-y-2 text-sm">
+   707→                  <div className="flex gap-2">
+   708→                    <span className="text-gray-400 w-24">Телефон:</span>
+   709→                    <a href={`tel:${lead.phone}`} className="text-red-700 hover:underline">{lead.phone}</a>
+   710→                    {phoneDigits && (
+   711→                      <>
+   712→                        {" · "}
+   713→                        <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">Telegram</a>
+   714→                        {" · "}
+   715→                        <a href="https://max.ru/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:underline text-xs">Max</a>
+   716→                      </>
+   717→                    )}
+   718→                  </div>
+   719→                  {lead.source && (
+   720→                    <div className="flex gap-2">
+   721→                      <span className="text-gray-400 w-24">Источник:</span>
+   722→                      <span>{lead.source}</span>
+   723→                    </div>
+   724→                  )}
+   725→                  <div className="flex gap-2">
+   726→                    <span className="text-gray-400 w-24">Создан:</span>
+   727→                    <span>{formatDate(lead.createdAt)}</span>
+   728→                  </div>
+   729→                  <div className="flex gap-2">
+   730→                    <span className="text-gray-400 w-24">Обновлён:</span>
+   731→                    <span>{formatDate(lead.updatedAt)}</span>
+   732→                  </div>
+   733→                  {lead.comment && (
+   734→                    <div className="flex gap-2">
+   735→                      <span className="text-gray-400 w-24">Комментарий:</span>
+   736→                      <span>{lead.comment}</span>
+   737→                    </div>
+   738→                  )}
+   739→                </div>
+   740→                <div className="space-y-2">
+   741→                  <div className="flex items-center gap-2">
+   742→                    <Tag className="w-3.5 h-3.5 text-gray-500" />
+   743→                    <span className="text-sm text-gray-600 font-medium">Теги</span>
+   744→                  </div>
+   745→                  <Input
+   746→                    value={editTags[lead.id] || ""}
+   747→                    onChange={(e) => setEditTags((prev) => ({ ...prev, [lead.id]: e.target.value }))}
+   748→                    placeholder="VIP, Покупатель, ..."
+   749→                    className="text-sm"
+   750→                  />
+   751→                  <div className="flex flex-wrap gap-1">
+   752→                    {PREDEFINED_TAGS.map((tag) => {
+   753→                      const isSelected = (editTags[lead.id] || "").split(",").map((t) => t.trim()).includes(tag);
+   754→                      const c = getTagColor(tag);
+   755→                      return (
+   756→                        <button
+   757→                          key={tag}
+   758→                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${isSelected ? `${c.bg} ${c.text} border-transparent` : "border-gray-200 text-gray-500 hover:bg-gray-100"}`}
+   759→                          onClick={() => {
+   760→                            const current = (editTags[lead.id] || "").split(",").map((t) => t.trim()).filter(Boolean);
+   761→                            const next = isSelected ? current.filter((t) => t !== tag) : [...current, tag];
+   762→                            setEditTags((prev) => ({ ...prev, [lead.id]: next.join(", ") }));
+   763→                          }}
+   764→                        >
+   765→                          {tag}
+   766→                        </button>
+   767→                      );
+   768→                    })}
+   769→                  </div>
+   770→                </div>
+   771→              </div>
+   772→              <div className="space-y-3">
+   773→                <div className="flex items-center justify-between">
+   774→                  <h4 className="text-sm font-semibold text-gray-700">Заметки</h4>
+   775→                  <div className="flex gap-1">
+   776→                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleExpand(lead.id)}>
+   777→                      <X className="w-3 h-3 mr-1" />Закрыть
+   778→                    </Button>
+   779→                    <Button
+   780→                      size="sm"
+   781→                      className="h-7 text-xs bg-red-700 hover:bg-red-800"
+   782→                      disabled={savingNotes === lead.id}
+   783→                      onClick={() => handleSaveNotes(lead.id)}
+   784→                    >
+   785→                      <Save className="w-3 h-3 mr-1" />
+   786→                      {savingNotes === lead.id ? "..." : "Сохранить"}
+   787→                    </Button>
+   788→                  </div>
+   789→                </div>
+   790→                <Textarea
+   791→                  value={editNotes[lead.id] || ""}
+   792→                  onChange={(e) => setEditNotes((prev) => ({ ...prev, [lead.id]: e.target.value }))}
+   793→                  placeholder="Добавьте заметки по лиду..."
+   794→                  rows={5}
+   795→                  className="text-sm"
+   796→                />
+   797→              </div>
+   798→            </div>
+   799→          </TableCell>
+   800→        </TableRow>
+   801→      )}
+   802→    </>
+   803→  );
+   804→}
