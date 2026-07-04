@@ -148,6 +148,8 @@ export default function Home() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    serviceType: "",
+    comment: "",
   });
   const [loading, setLoading] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -277,6 +279,8 @@ export default function Home() {
         body: JSON.stringify({
           name: formData.name,
           phone: formData.phone,
+          serviceType: formData.serviceType || undefined,
+          comment: formData.comment || undefined,
         }),
       });
       if (res.ok) {
@@ -286,7 +290,7 @@ export default function Home() {
         } else {
           toast.success(contact.success);
         }
-        setFormData({ name: "", phone: "" });
+        setFormData({ name: "", phone: "", serviceType: "", comment: "" });
       } else {
         toast.error(contact.error);
       }
@@ -807,6 +811,41 @@ export default function Home() {
                       className="h-11"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2 mb-5">
+                  <Label htmlFor="reason" className="text-xs font-medium">
+                    {contact.reason}
+                  </Label>
+                  <select
+                    id="reason"
+                    value={formData.serviceType}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, serviceType: e.target.value }))
+                    }
+                    className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-700 focus-visible:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">{contact.reasonPlaceholder}</option>
+                    {(contact.reasons as string[]).map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2 mb-5">
+                  <Label htmlFor="comment" className="text-xs font-medium">
+                    {contact.comment}
+                  </Label>
+                  <textarea
+                    id="comment"
+                    value={formData.comment}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, comment: e.target.value }))
+                    }
+                    placeholder={contact.commentPlaceholder}
+                    rows={3}
+                    className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-700 focus-visible:border-red-700 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  />
                 </div>
 
                 <Button
