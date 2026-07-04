@@ -360,19 +360,8 @@ export default function Home() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <button
-            onClick={() => scrollTo("hero")}
-            className="flex items-center select-none"
-          >
-            <span
-              className={`text-[14px] font-bold tracking-tight transition-colors ${
-                scrolled ? "text-foreground" : "text-white"
-              }`}
-            >
-              {hero.name}
-            </span>
-          </button>
+          {/* Logo placeholder */}
+          <div />
 
           {/* Desktop nav links */}
           <nav className="hidden lg:flex items-center gap-8">
