@@ -6,6 +6,7 @@ const STAGES = ["new", "showing", "negotiation", "contract", "closed_won", "clos
 
 export async function GET(req: NextRequest) {
   const stage = new URL(req.url).searchParams.get("stage");
+  const limit = parseInt(new URL(req.url).searchParams.get("limit") || "100");
   const where: Record<string, unknown> = {};
   if (stage && stage !== "all") where.stage = stage;
 
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
     where,
     include: { client: true, property: true },
     orderBy: { updatedAt: "desc" },
+    take: Math.min(limit, 500),
   });
   return NextResponse.json(deals);
 }
@@ -48,7 +50,10 @@ export async function PUT(req: NextRequest) {
 
   const update: Record<string, unknown> = {};
   if (data.title) update.title = data.title;
-  if (data.clientId) update.clientId = data.clientId;
+  // clientId: поддерживаем сброс связи (пустая строка / null)
+  if (data.clientId !== undefined) {
+    update.clientId = data.clientId || null;
+  }
   if (data.value !== undefined) update.value = data.value;
   if (data.stage && STAGES.includes(data.stage)) {
     update.stage = data.stage;
@@ -73,7 +78,9 @@ export async function PUT(req: NextRequest) {
     }
   }
   if (data.notes !== undefined) update.notes = data.notes;
-  if (data.propertyId !== undefined) update.propertyId = data.propertyId;
+  if (data.propertyId !== undefined) {
+    update.propertyId = data.propertyId || null;
+  }
 
   const deal = await db.deal.update({ where: { id }, data: update });
   return NextResponse.json(deal);

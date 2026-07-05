@@ -1,18 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Lock, ArrowLeft } from "lucide-react";
+import { Lock, ArrowLeft, KeyRound } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [passwordSet, setPasswordSet] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/admin/auth")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.passwordSet) {
+          setPasswordSet(false);
+          setNeedsSetup(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +38,40 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
-      if (data.success) {
-        localStorage.setItem("isAdmin", "true");
+      if (res.ok && data.success) {
         toast.success("Вход выполнен");
         router.push("/admin");
+        router.refresh();
       } else {
         toast.error("Неверный пароль");
+      }
+    } catch {
+      toast.error("Ошибка сервера");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast.error("Минимум 6 символов");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Пароль установлен");
+        router.push("/admin");
+        router.refresh();
+      } else {
+        toast.error(data.error || "Ошибка");
       }
     } catch {
       toast.error("Ошибка сервера");
@@ -51,15 +93,26 @@ export default function AdminLoginPage() {
         <Card className="shadow-lg">
           <CardHeader className="text-center pb-2">
             <div className="mx-auto w-12 h-12 bg-red-700 rounded-xl flex items-center justify-center mb-3">
-              <Lock className="w-6 h-6 text-white" />
+              {needsSetup ? (
+                <KeyRound className="w-6 h-6 text-white" />
+              ) : (
+                <Lock className="w-6 h-6 text-white" />
+              )}
             </div>
-            <CardTitle className="text-xl font-bold">Панель управления</CardTitle>
+            <CardTitle className="text-xl font-bold">
+              {needsSetup ? "Первичная настройка" : "Панель управления"}
+            </CardTitle>
             <p className="text-sm text-gray-500 mt-1">
-              Введите пароль для входа
+              {needsSetup
+                ? "Придумайте пароль администратора"
+                : "Введите пароль для входа"}
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={needsSetup ? handleSetup : handleSubmit}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="password">Пароль</Label>
                 <Input
@@ -77,13 +130,19 @@ export default function AdminLoginPage() {
                 className="w-full bg-red-700 hover:bg-red-800"
                 disabled={loading}
               >
-                {loading ? "Вход..." : "Войти"}
+                {loading
+                  ? needsSetup
+                    ? "Сохранение..."
+                    : "Вход..."
+                  : needsSetup
+                    ? "Установить пароль"
+                    : "Войти"}
               </Button>
             </form>
           </CardContent>
         </Card>
         <p className="text-center text-xs text-gray-400 mt-4">
-          CRM Риэлтора &copy; 2025
+          CRM Риэлтора &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { db } from "@/lib/db";
 import { sendNotification, logActivity } from "@/lib/notifications";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const leadSchema = z.object({
   name: z.string().min(1),
@@ -12,6 +13,20 @@ const leadSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 заявок / минута с одного IP.
+    const ip = getClientIp(req);
+    const rl = rateLimit(`leads:${ip}`, 5, 60_000);
+    if (!rl.ok) {
+      const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: "Слишком много запросов. Попробуйте позже." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.max(retryAfter, 1)) },
+        },
+      );
+    }
+
     const body = await req.json();
     const parsed = leadSchema.safeParse(body);
 

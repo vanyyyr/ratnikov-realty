@@ -516,6 +516,7 @@ export default function LeadsPage() {
                         fetchTemplates={fetchTemplates}
                         templates={templates}
                         copyTemplate={copyTemplate}
+                        leadTasks={leadTasks}
                       />
                     );
                   })}
@@ -560,12 +561,22 @@ export default function LeadsPage() {
                       <span>{formatDate(lead.createdAt)}</span>
                     </div>
 
-                    <div className="flex items-center gap-1 pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 pt-2 border-t border-border/50">
                       {phoneDigits && (
-                        <Button variant="ghost" size="sm" className="h-9 text-xs" asChild>
-                          <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer">
-                            <Send className="w-3.5 h-3.5 mr-1" /> Telegram
-                          </a>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 text-xs"
+                          onClick={() => {
+                            const phone = phoneDigits.startsWith("7")
+                              ? `+${phoneDigits}`
+                              : phoneDigits;
+                            navigator.clipboard.writeText(phone);
+                            toast.success("Номер скопирован");
+                          }}
+                          title="Скопировать номер в clipboard"
+                        >
+                          <Send className="w-3.5 h-3.5 mr-1" /> Telegram
                         </Button>
                       )}
                       <Button variant="ghost" size="sm" className="h-9 text-xs" asChild>
@@ -742,10 +753,20 @@ function LeadRow({
         <TableCell>
           <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
             {phoneDigits && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-blue-500" asChild>
-                <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer" title="Telegram">
-                  <Send className="w-3.5 h-3.5" />
-                </a>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-brand"
+                title="Скопировать номер"
+                onClick={() => {
+                  const phone = phoneDigits.startsWith("7")
+                    ? `+${phoneDigits}`
+                    : phoneDigits;
+                  navigator.clipboard.writeText(phone);
+                  toast.success("Номер скопирован");
+                }}
+              >
+                <Send className="w-3.5 h-3.5" />
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600" asChild>
@@ -809,9 +830,22 @@ function LeadRow({
                     {phoneDigits && (
                       <>
                         {" · "}
-                        <a href={`https://t.me/+7${phoneDigits}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs">Telegram</a>
+                        <button
+                          onClick={() => {
+                            const phone = phoneDigits.startsWith("7")
+                              ? `+${phoneDigits}`
+                              : phoneDigits;
+                            navigator.clipboard.writeText(phone);
+                          }}
+                          className="text-brand hover:underline text-xs"
+                          title="Скопировать номер"
+                        >
+                          Telegram
+                        </button>
                         {" · "}
-                        <a href="https://max.ru/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:underline text-xs">Max</a>
+                        <a href="https://max.ru/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:underline text-xs">
+                          Max
+                        </a>
                       </>
                     )}
                   </div>

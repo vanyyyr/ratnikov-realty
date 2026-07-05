@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { setAdminPassword } from "@/lib/auth";
-import { sendTelegramNotification, sendMaxNotification, logActivity } from "@/lib/notifications";
+import { setAdminPassword, verifyAdmin } from "@/lib/auth";
+import {
+  sendTelegramNotification,
+  sendMaxNotification,
+  logActivity,
+} from "@/lib/notifications";
 
 const SETTINGS_KEYS = [
   "telegram_bot_token",
@@ -23,70 +27,104 @@ const SETTINGS_KEYS = [
 ];
 
 export async function GET() {
-  const settings = await db.setting.findMany({
-    where: { key: { in: SETTINGS_KEYS } },
-  });
-  const map: Record<string, string> = {};
-  for (const s of settings) map[s.key] = s.value;
-  return NextResponse.json(map);
+  try {
+    const settings = await db.setting.findMany({
+      where: { key: { in: SETTINGS_KEYS } },
+    });
+    const map: Record<string, string> = {};
+    for (const s of settings) map[s.key] = s.value;
+    return NextResponse.json(map);
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to load settings" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PUT(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  // Handle password change
-  if (body.adminPassword) {
-    const currentPassword = body.currentPassword;
-    const { verifyAdmin } = await import("@/lib/auth");
-    if (currentPassword) {
+    // Смена пароля: обязательная серверная проверка текущего пароля.
+    if (body.adminPassword) {
+      const currentPassword = body.currentPassword;
+      if (!currentPassword) {
+        return NextResponse.json(
+          { error: "Укажите текущий пароль" },
+          { status: 400 },
+        );
+      }
       const valid = await verifyAdmin(currentPassword);
       if (!valid) {
-        return NextResponse.json({ error: "Неверный текущий пароль" }, { status: 401 });
+        return NextResponse.json(
+          { error: "Неверный текущий пароль" },
+          { status: 401 },
+        );
+      }
+      if (typeof body.adminPassword !== "string" || body.adminPassword.length < 6) {
+        return NextResponse.json(
+          { error: "Новый пароль слишком короткий (мин. 6 символов)" },
+          { status: 400 },
+        );
+      }
+      await setAdminPassword(body.adminPassword);
+      await logActivity("password_change", "Пароль администратора изменён");
+      delete body.adminPassword;
+      delete body.currentPassword;
+    }
+
+    // Сохранение остальных настроек
+    for (const [key, value] of Object.entries(body)) {
+      if (key === "_test") continue;
+      if (SETTINGS_KEYS.includes(key)) {
+        await db.setting.upsert({
+          where: { key },
+          update: { value: String(value || "") },
+          create: { key, value: String(value || "") },
+        });
       }
     }
-    await setAdminPassword(body.adminPassword);
-    delete body.adminPassword;
-    delete body.currentPassword;
-  }
 
-  // Save settings
-  for (const [key, value] of Object.entries(body)) {
-    if (SETTINGS_KEYS.includes(key)) {
-      await db.setting.upsert({
-        where: { key },
-        update: { value: String(value || "") },
-        create: { key, value: String(value || "") },
+    // Тестовые уведомления
+    if (body._test === "telegram") {
+      const tgOk = await sendTelegramNotification({
+        type: "test",
+        title: "Тестовое уведомление",
+        message: "Настройки Telegram подключены успешно! ✓",
       });
+      await logActivity(
+        "test_notification",
+        "Тестовое уведомление в Telegram: " + (tgOk ? "успешно" : "ошибка"),
+      );
+      if (!tgOk) {
+        return NextResponse.json(
+          { error: "Не удалось отправить. Проверьте токен и Chat ID." },
+          { status: 400 },
+        );
+      }
     }
-  }
 
-  // Handle test notifications
-  if (body._test === "telegram") {
-    delete body._test;
-    // Save token/chat_id first, then send test
-    const tgOk = await sendTelegramNotification({
-      type: "test",
-      title: "Тестовое уведомление",
-      message: "Настройки Telegram подключены успешно! ✓",
-    });
-    await logActivity("test_notification", "Тестовое уведомление в Telegram: " + (tgOk ? "успешно" : "ошибка"));
-    if (!tgOk) {
-      return NextResponse.json({ error: "Не удалось отправить. Проверьте токен и Chat ID." }, { status: 400 });
+    if (body._test === "max") {
+      const mxOk = await sendMaxNotification({
+        type: "test",
+        title: "Тестовое уведомление",
+        message: "Настройки Max webhook подключены успешно!",
+      });
+      await logActivity(
+        "test_notification",
+        "Тестовое уведомление в Max: " + (mxOk ? "успешно" : "ошибка"),
+      );
+      if (!mxOk) {
+        return NextResponse.json(
+          { error: "Не удалось отправить. Проверьте URL вебхука." },
+          { status: 400 },
+        );
+      }
     }
-  }
 
-  if (body._test === "max") {
-    delete body._test;
-    const mxOk = await sendMaxNotification({
-      type: "test",
-      title: "Тестовое уведомление",
-      message: "Настройки Max webhook подключены успешно!",
-    });
-    await logActivity("test_notification", "Тестовое уведомление в Max: " + (mxOk ? "успешно" : "ошибка"));
-    if (!mxOk) {
-      return NextResponse.json({ error: "Не удалось отправить. Проверьте URL вебхука." }, { status: 400 });
-    }
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true });
 }

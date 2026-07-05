@@ -4,6 +4,7 @@ import { logActivity } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
   const leadId = new URL(req.url).searchParams.get("leadId");
+  const limit = parseInt(new URL(req.url).searchParams.get("limit") || "100");
   const where: Record<string, unknown> = {};
   if (leadId) where.leadId = leadId;
 
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
       { priority: "desc" },
       { createdAt: "desc" },
     ],
+    take: Math.min(limit, 500),
     include: {
       lead: { select: { id: true, name: true } },
       deal: { select: { id: true, title: true } },
@@ -40,39 +42,48 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { id, ...data } = await req.json();
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  const update: Record<string, unknown> = {};
-  if (data.title !== undefined) update.title = data.title;
-  if (data.description !== undefined) update.description = data.description || null;
-  if (data.priority !== undefined) update.priority = data.priority;
-  if (data.dueDate !== undefined) update.dueDate = data.dueDate ? new Date(data.dueDate) : null;
-  if (data.clientName !== undefined) update.clientName = data.clientName || null;
-  if (data.leadId !== undefined) update.leadId = data.leadId || null;
-  if (data.dealId !== undefined) update.dealId = data.dealId || null;
-  if (data.status !== undefined) {
-    update.status = data.status;
-    if (data.status === "completed") {
-      update.completedAt = new Date();
-      await logActivity("task_completed", `Задача выполнена: ${id}`);
-    } else {
-      await logActivity("task_updated", `Задача обновлена: ${id}, статус: ${data.status}`);
+  try {
+    const { id, ...data } = await req.json();
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    const update: Record<string, unknown> = {};
+    if (data.title !== undefined) update.title = data.title;
+    if (data.description !== undefined) update.description = data.description || null;
+    if (data.priority !== undefined) update.priority = data.priority;
+    if (data.dueDate !== undefined) update.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+    if (data.clientName !== undefined) update.clientName = data.clientName || null;
+    if (data.leadId !== undefined) update.leadId = data.leadId || null;
+    if (data.dealId !== undefined) update.dealId = data.dealId || null;
+    if (data.status !== undefined) {
+      update.status = data.status;
+      if (data.status === "completed") {
+        update.completedAt = new Date();
+        await logActivity("task_completed", `Задача выполнена: ${id}`);
+      } else {
+        await logActivity("task_updated", `Задача обновлена: ${id}, статус: ${data.status}`);
+      }
     }
+    const task = await db.task.update({
+      where: { id },
+      data: update,
+      include: {
+        lead: { select: { id: true, name: true } },
+        deal: { select: { id: true, title: true } },
+      },
+    });
+    return NextResponse.json(task);
+  } catch {
+    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
   }
-  const task = await db.task.update({
-    where: { id },
-    data: update,
-    include: {
-      lead: { select: { id: true, name: true } },
-      deal: { select: { id: true, title: true } },
-    },
-  });
-  return NextResponse.json(task);
 }
 
 export async function DELETE(req: NextRequest) {
-  const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-  await db.task.delete({ where: { id } });
-  return NextResponse.json({ success: true });
+  try {
+    const id = new URL(req.url).searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    await db.task.delete({ where: { id } });
+    await logActivity("task_deleted", `Удалена задача: ${id}`);
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
+  }
 }

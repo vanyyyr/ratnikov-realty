@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -62,8 +62,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/guide": "Гайд по CRM",
 };
 
-const emptySubscribe = () => () => {};
-
 function SidebarNav({
   pathname,
   onClose,
@@ -73,9 +71,18 @@ function SidebarNav({
 }) {
   const router = useRouter();
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAdmin");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" }),
+      });
+    } catch {
+      // ignore
+    }
     router.push("/admin/login");
+    router.refresh();
   };
 
   return (
@@ -151,31 +158,10 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-
-  useEffect(() => {
-    if (!mounted) return;
-    const isAdmin = localStorage.getItem("isAdmin") === "true";
-    if (!isAdmin && pathname !== "/admin/login") {
-      router.replace("/admin/login");
-    }
-  }, [mounted, pathname, router]);
-
   const closeSidebar = () => setSidebarOpen(false);
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-red-700 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
-  if (!isAdmin && pathname !== "/admin/login") {
-    return null;
-  }
-
+  // Middleware уже защищает все /admin/* маршруты кроме /admin/login.
+  // Страница логина рендерится без shell'а.
   if (pathname === "/admin/login") {
     return <>{children}</>;
   }

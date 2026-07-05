@@ -170,33 +170,27 @@ export default function SettingsPage() {
       toast.error("Пароли не совпадают");
       return;
     }
-    if (passwordForm.newPass.length < 4) {
-      toast.error("Пароль должен быть не менее 4 символов");
+    if (passwordForm.newPass.length < 6) {
+      toast.error("Пароль должен быть не менее 6 символов");
       return;
     }
 
-    // Verify current password first
+    setSaving("password");
     try {
-      const authRes = await fetch("/api/admin/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: passwordForm.current }),
-      });
-      const authData = await authRes.json();
-      if (!authData.success) {
-        toast.error("Текущий пароль указан неверно");
-        return;
-      }
-
-      setSaving("password");
       const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminPassword: passwordForm.newPass }),
+        body: JSON.stringify({
+          currentPassword: passwordForm.current,
+          adminPassword: passwordForm.newPass,
+        }),
       });
       if (res.ok) {
         toast.success("Пароль изменён");
         setPasswordForm({ current: "", newPass: "", confirm: "" });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Ошибка смены пароля");
       }
     } catch {
       toast.error("Ошибка смены пароля");

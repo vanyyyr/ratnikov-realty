@@ -148,9 +148,9 @@ export default function AdminDashboardPage() {
   const fetchWidgets = async () => {
     try {
       const [leadsRes, tasksRes, dealsRes] = await Promise.all([
-        fetch("/api/admin/leads?status=new"),
-        fetch("/api/admin/tasks"),
-        fetch("/api/admin/deals"),
+        fetch("/api/admin/leads?status=new&limit=5"),
+        fetch("/api/admin/tasks?limit=100"),
+        fetch("/api/admin/deals?limit=100"),
       ]);
 
       if (leadsRes.ok) {
@@ -161,6 +161,8 @@ export default function AdminDashboardPage() {
             .sort((a: RecentLead, b: RecentLead) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 5)
         );
+      } else {
+        toast.error("Не удалось загрузить лиды");
       }
 
       if (tasksRes.ok) {
@@ -171,6 +173,8 @@ export default function AdminDashboardPage() {
             (t: OverdueTask) => t.dueDate && new Date(t.dueDate) < now
           )
         );
+      } else {
+        toast.error("Не удалось загрузить задачи");
       }
 
       if (dealsRes.ok) {
@@ -182,9 +186,11 @@ export default function AdminDashboardPage() {
           }
         }
         setActiveDeals(Object.entries(stageCounts).map(([stage, count]) => ({ stage, count })));
+      } else {
+        toast.error("Не удалось загрузить сделки");
       }
     } catch {
-      // silent
+      toast.error("Ошибка загрузки данных");
     }
   };
 

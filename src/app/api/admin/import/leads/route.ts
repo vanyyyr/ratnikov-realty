@@ -88,7 +88,10 @@ export async function POST(req: NextRequest) {
 
       // Check for duplicate
       const existing = await db.lead.findFirst({ where: { phone } });
-      if (existing) duplicates++;
+      if (existing) {
+        duplicates++;
+        continue; // не создаём дубликат при импорте
+      }
 
       let tagsStr: string | undefined;
       if (tagsIdx >= 0 && row[tagsIdx]) {
@@ -106,7 +109,6 @@ export async function POST(req: NextRequest) {
           source: sourceIdx >= 0 ? (row[sourceIdx] || undefined) : "import",
           comment: commentIdx >= 0 ? (row[commentIdx] || undefined) : undefined,
           tags: tagsStr,
-          notes: existing ? `Дубликат при импорте: ${existing.id}` : null,
           status: "new",
         },
       });
