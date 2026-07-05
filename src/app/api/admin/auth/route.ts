@@ -41,8 +41,12 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ success: true });
     await createSession(res);
     return res;
-  } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (error: unknown) {
+    console.error("Auth error:", error);
+    return NextResponse.json(
+      { error: "Server error", details: String(error) },
+      { status: 500 },
+    );
   }
 }
 
