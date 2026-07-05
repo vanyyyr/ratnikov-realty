@@ -4,11 +4,12 @@ import { verifySession } from "@/lib/auth";
 // Маршруты, защищённые серверной авторизацией.
 const ADMIN_PREFIX = "/admin";
 const ADMIN_API_PREFIX = "/api/admin";
-// Логин, auth-эндпоинт и первичная установка пароля — публичные.
+// Логин, auth-эндпоинт, первичная установка пароля и сброс пароля — публичные.
 const PUBLIC_ADMIN_PATHS = new Set([
   "/admin/login",
   "/api/admin/auth",
   "/api/admin/setup",
+  "/api/admin/reset-password",
 ]);
 
 export async function middleware(req: NextRequest) {
