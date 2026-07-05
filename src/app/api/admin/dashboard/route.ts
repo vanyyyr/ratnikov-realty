@@ -47,7 +47,7 @@ export async function GET() {
 
     const leadsByMonth = await db.$queryRaw<
       { month: string; count: number }[]
-    >`SELECT strftime('%Y-%m', createdAt) as month, COUNT(*) as count FROM Lead GROUP BY month ORDER BY month DESC LIMIT 12`;
+    >`SELECT TO_CHAR("createdAt", 'YYYY-MM') as month, COUNT(*) as count FROM "Lead" GROUP BY month ORDER BY month DESC LIMIT 12`;
 
     return NextResponse.json({
       totalLeads,
