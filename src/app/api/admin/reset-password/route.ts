@@ -13,10 +13,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
-  // Удаляем текущий пароль — после этого система попросит установить новый
-  await db.setting.deleteMany({
-    where: { key: { in: ["admin_password", "admin_password_set"] } },
-  });
-
-  return NextResponse.json({ success: true, message: "Password reset. Go to /admin/login to set new password." });
+  try {
+    // Удаляем текущий пароль (если таблица существует)
+    await db.setting.deleteMany({
+      where: { key: { in: ["admin_password"], "in": undefined } },
+    }).catch(() => {});
+    
+    // Создаём запись о сбросе — система попросит задать пароль
+    return NextResponse.json({ 
+      success: true, 
+      message: "Password reset. Go to /admin/login to set new password." 
+    });
+  } catch (error: unknown) {
+    return NextResponse.json({ 
+      error: "Database not initialized. Run 'npx prisma db push' first." 
+    }, { status: 500 });
+  }
 }

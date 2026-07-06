@@ -71,13 +71,18 @@ export async function setAdminPassword(newPassword: string) {
 /**
  * Проверка: был ли пароль администратора уже установлен.
  * Возвращает true если существует admin_password в базе.
+ * Если база недоступна — возвращает false (требуется инициализация).
  */
 export async function isAdminPasswordSet(): Promise<boolean> {
-  // Пароль установлен, если запись существует в базе
-  const pw = await db.setting.findUnique({
-    where: { key: ADMIN_PASSWORD_KEY },
-  });
-  return Boolean(pw?.value);
+  try {
+    const pw = await db.setting.findUnique({
+      where: { key: ADMIN_PASSWORD_KEY },
+    });
+    return Boolean(pw?.value);
+  } catch {
+    // База недоступна или таблица не создана — требуется инициализация
+    return false;
+  }
 }
 
 /**
