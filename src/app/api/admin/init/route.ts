@@ -22,14 +22,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Сначала создаём таблицу Setting если её нет (raw query)
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Setting" (
-        "key" TEXT PRIMARY KEY,
-        "value" TEXT,
-        "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    // Проверяем/создаём таблицу (upsert работает даже если таблица не существует)
+    await db.setting.upsert({
+      where: { key: "admin_password" },
+      update: {},
+      create: { key: "admin_password", value: "temp" },
+    });
 
     // Устанавливаем пароль
     await setAdminPassword(password);
