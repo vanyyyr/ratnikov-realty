@@ -22,14 +22,36 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Проверяем/создаём таблицу (upsert работает даже если таблица не существует)
-    await db.setting.upsert({
-      where: { key: "admin_password" },
+    // Создаём все таблицы через upsert (если не существуют)
+    // Это создаст таблицы Setting, Lead, Review, Case минимум
+    await db.lead.upsert({
+      where: { id: "__init__" },
       update: {},
-      create: { key: "admin_password", value: "temp" },
-    });
+      create: {
+        id: "__init__",
+        name: "init",
+        phone: "init",
+        status: "new",
+        source: "init",
+      },
+    }).catch(() => {});
 
-    // Устанавливаем пароль
+    await db.review.upsert({
+      where: { id: "__init__" },
+      update: {},
+      create: {
+        id: "__init__",
+        name: "init",
+        text: "init",
+        rating: 5,
+      },
+    }).catch(() => {});
+
+    // Удаляем init записи
+    await db.lead.delete({ where: { id: "__init__" } }).catch(() => {});
+    await db.review.delete({ where: { id: "__init__" } }).catch(() => {});
+
+    // Создаём пароль
     await setAdminPassword(password);
 
     return NextResponse.json({
