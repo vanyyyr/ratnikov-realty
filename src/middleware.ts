@@ -45,5 +45,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Запускаем middleware только для admin-маршрутов — это снижает накладные расходы.
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  // Включаем /admin/login явно, т.к. /admin/:path* не охватывает /admin/login
+  matcher: ["/admin", "/admin/login", "/admin/:path*", "/api/admin/:path*"],
 };
