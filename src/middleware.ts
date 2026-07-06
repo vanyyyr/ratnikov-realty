@@ -10,6 +10,7 @@ const PUBLIC_ADMIN_PATHS = new Set([
   "/api/admin/auth",
   "/api/admin/setup",
   "/api/admin/reset-password",
+  "/api/admin/init",
 ]);
 
 export async function middleware(req: NextRequest) {
